@@ -17,6 +17,47 @@ np.import_array()
 from opencv cimport *
 #from eigency.core cimport *
 
+cdef pyKeyFrame warpKeyFrame(KeyFrame *ptr):
+    kf = pyKeyFrame()
+    kf.thisptr = ptr
+    return kf
+
+cdef object warpKeyFrames(vector[KeyFrame*] kfs):
+    return [warpKeyFrame(kf) for kf in kfs]
+
+cdef class pyKeyFrame(object):
+    cdef KeyFrame *thisptr
+    @property
+    def Id(self):
+        return self.thisptr.mnId
+
+    @property
+    def FrameId(self):
+        return self.thisptr.mnFrameId
+
+    @property
+    def mTimeStamp(self):
+        return self.thisptr.mTimeStamp
+    def GetPose(self):
+        return pyopencv_from(self.thisptr.GetPose())
+    def GetPoseInverse(self):
+        return pyopencv_from(self.thisptr.GetPoseInverse())
+    def GetCameraCenter(self):
+        return pyopencv_from(self.thisptr.GetCameraCenter())
+    def GetRotation(self):
+        return pyopencv_from(self.thisptr.GetRotation())
+    def GetTranslation(self):
+        return pyopencv_from(self.thisptr.GetTranslation())
+
+    def GetVectorCovisibleKeyFrames(self):
+        return warpKeyFrames(self.thisptr.GetVectorCovisibleKeyFrames())
+
+    def GetBestCovisibilityKeyFrames(self, N):
+        return warpKeyFrames(self.thisptr.GetBestCovisibilityKeyFrames(N))
+
+    def GetCovisiblesByWeight(self, w):
+        return warpKeyFrames(self.thisptr.GetCovisiblesByWeight(w))
+
 
 cdef class pySystem(object):
     cdef System *thisptr
@@ -33,9 +74,8 @@ cdef class pySystem(object):
     def TrackMonocular(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
         cdef Mat image,res;
         pyopencv_to(im, image)
-        with nogil:
-            res = self.thisptr.TrackMonocular(image, timestamp)
-        return pyopencv_from(res)
+        cTw = self.thisptr.TrackMonocular(image, timestamp)
+        return pyopencv_from(cTw)
 
     def SetLocalizationMode(self, bool on_off=True):
         if on_off:
@@ -48,3 +88,7 @@ cdef class pySystem(object):
 
     def getState(self):
         return self.thisptr.mpTracker.mState
+
+    def getAllKeyFrames(self):
+        return warpKeyFrames(self.thisptr.mpMap.GetAllKeyFrames())
+

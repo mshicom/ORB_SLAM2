@@ -28,14 +28,13 @@ if __name__ == '__main__':
 
     K = np.ascontiguousarray(K,'f')
     frames = [np.ascontiguousarray(f, np.uint8) for f in frames]
-#    wGc = [np.ascontiguousarray(relPos(wGc[0], g), np.double) for g in wGc]
 #%%
 
     slam = pySystem("/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/bumblebee.yaml")
-#    slam.setGradThreshold(10)
 
     for f, ts in zip(frames, keys):
+        print ts
         print slam.TrackMonocular(f,ts)
-        plt.pause(0.5)
+    kfs = slam.getAllKeyFrames()
     plt.waitforbuttonpress()
 

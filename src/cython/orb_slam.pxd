@@ -1,18 +1,68 @@
 #from eigency.core cimport *
 from libcpp.deque cimport deque
 from libcpp.vector cimport vector
+from libcpp.set cimport set
 from libcpp.memory cimport shared_ptr
 from libcpp cimport bool
 from libcpp.string cimport string
 from opencv cimport *
+#from KeyFrame cimport *
 
 cdef extern from "../../include/Viewer.h" namespace "ORB_SLAM2" nogil:
     cppclass Viewer:
         pass
 
+cdef extern from "../../Thirdparty/DBoW2/DBoW2/BowVector.h" namespace "DBoW2":
+    cppclass BowVector:
+        pass
+
+cdef extern from "../../Thirdparty/DBoW2/DBoW2/FeatureVector.h" namespace "DBoW2":
+    cppclass FeatureVector:
+        pass
+
 cdef extern from "../../include/Map.h" namespace "ORB_SLAM2" nogil:
     cppclass Map:
+        vector[KeyFrame*] GetAllKeyFrames()
+        vector[MapPoint*] GetAllMapPoints()
+        vector[MapPoint*] GetReferenceMapPoints()
+
+cdef extern from "../../include/MapPoint.h" namespace "ORB_SLAM2" nogil:
+    cppclass MapPoint:
+        Mat GetWorldPos()
+        Mat GetNormal()
+        KeyFrame* GetReferenceKeyFrame()
+        bool isBad()
+
+cdef extern from "../../include/Frame.h" namespace "ORB_SLAM2" nogil:
+    cppclass Frame:
         pass
+
+
+cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
+    ctypedef KeyFrame* pKeyFrame
+    cppclass KeyFrame:
+        KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB)
+        void SetPose(const Mat &Tcw)
+        Mat GetPose()
+        Mat GetPoseInverse()
+        Mat GetCameraCenter()
+        Mat GetStereoCenter()
+        Mat GetRotation()
+        Mat GetTranslation()
+        set[KeyFrame*] GetConnectedKeyFrames()
+        vector[KeyFrame*] GetVectorCovisibleKeyFrames()
+        vector[KeyFrame*] GetBestCovisibilityKeyFrames(const int &N)
+        vector[KeyFrame*] GetCovisiblesByWeight(const int &w)
+        long unsigned int mnId
+        const long unsigned int mnFrameId
+        const double mTimeStamp
+
+        BowVector mBowVec
+        FeatureVector mFeatVec
+
+cdef extern from "../../include/KeyFrameDatabase.h" namespace "ORB_SLAM2" nogil:
+    cppclass KeyFrameDatabase:
+        vector[KeyFrame*] DetectRelocalizationCandidates(Frame* F);
 
 cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
     enum eTrackingState "ORB_SLAM2::Tracking::eTrackingState":
@@ -25,6 +75,7 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
     cppclass Tracking:
         eTrackingState mState
         pass
+
 
 cdef extern from "../../include/LocalMapping.h" namespace "ORB_SLAM2" nogil:
     cppclass LocalMapping:
