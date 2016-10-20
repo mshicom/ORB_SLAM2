@@ -46,5 +46,10 @@ if __name__ == '__main__':
         plt.waitforbuttonpress()
 
 #%% show 3d map-points
-   p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps])
+   p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps if not mp.isBad()])
    plotxyz(p3d)
+
+#%% localization mode
+   slam.SetLocalizationMode(1)
+   slam.TrackMonocular(f,ts)
+

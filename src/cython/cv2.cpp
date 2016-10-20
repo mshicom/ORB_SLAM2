@@ -7,20 +7,20 @@
 
 
 
-static PyObject* opencv_error = 0;
+//static PyObject* opencv_error = 0;
 
-static int failmsg(const char *fmt, ...)
-{
-    char str[1000];
+//static int failmsg(const char *fmt, ...)
+//{
+//    char str[1000];
 
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(str, sizeof(str), fmt, ap);
-    va_end(ap);
+//    va_list ap;
+//    va_start(ap, fmt);
+//    vsnprintf(str, sizeof(str), fmt, ap);
+//    va_end(ap);
 
-    PyErr_SetString(PyExc_TypeError, str);
-    return 0;
-}
+//    PyErr_SetString(PyExc_TypeError, str);
+//    return 0;
+//}
 
 class PyAllowThreads
 {
@@ -152,7 +152,7 @@ static int pyopencv_to(const PyObject* o, Mat& m, const char* name = "<unknown>"
 
     if( !PyArray_Check(o) )
     {
-        failmsg("%s is not a numpy array", name);
+        failmsgp("%s is not a numpy array", name);
         return false;
     }
 
@@ -165,14 +165,14 @@ static int pyopencv_to(const PyObject* o, Mat& m, const char* name = "<unknown>"
 
     if( type < 0 )
     {
-        failmsg("%s data type = %d is not supported", name, typenum);
+        failmsgp("%s data type = %d is not supported", name, typenum);
         return false;
     }
 
     int ndims = PyArray_NDIM(o);
     if(ndims >= CV_MAX_DIM)
     {
-        failmsg("%s dimensionality (=%d) is too high", name, ndims);
+        failmsgp("%s dimensionality (=%d) is too high", name, ndims);
         return false;
     }
 
@@ -209,7 +209,7 @@ static int pyopencv_to(const PyObject* o, Mat& m, const char* name = "<unknown>"
 
     if( ndims > 2 && !allowND )
     {
-        failmsg("%s has more than 2 dimensions", name);
+        failmsgp("%s has more than 2 dimensions", name);
         return false;
     }
 

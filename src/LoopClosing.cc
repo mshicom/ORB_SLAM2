@@ -101,6 +101,16 @@ bool LoopClosing::CheckNewKeyFrames()
     return(!mlpLoopKeyFrameQueue.empty());
 }
 
+/* Robustness in loop closure is essential as false loop closure
+ * can corrupt the map. Galvez-Lopez and Tardos [1] proposed a
+ * temporal consistency test, so that the system waits to obtain a
+ * number of consecutive temporally consistent matches to finally
+ * accept a loop closure.
+ *
+ * Here we propose instead a covisibility consistency test,
+ * that two consecutive keyframe matches are considered consistent
+ * if there exist and edge in the covisibility graph linking them.
+ */
 bool LoopClosing::DetectLoop()
 {
     {
@@ -112,7 +122,7 @@ bool LoopClosing::DetectLoop()
     }
 
     //If the map contains less than 10 KF or less than 10 KF have passed from last loop detection
-    if(mpCurrentKF->mnId<mLastLoopKFid+10)
+    if(mpCurrentKF->mnId < mLastLoopKFid+10)
     {
         mpKeyFrameDB->add(mpCurrentKF);
         mpCurrentKF->SetErase();

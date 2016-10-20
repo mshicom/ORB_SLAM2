@@ -19,9 +19,12 @@ from opencv cimport *
 
 """ KeyFrame """
 cdef pyKeyFrame warpKeyFrame(KeyFrame *ptr):
-    kf = pyKeyFrame()
-    kf.thisptr = ptr
-    return kf
+    if not ptr.isBad():
+        kf = pyKeyFrame()
+        kf.thisptr = ptr
+        return kf
+    else:
+        return None
 
 cdef object warpKeyFrames(vector[KeyFrame*] kfs):
     return [warpKeyFrame(kf) for kf in kfs]
@@ -85,9 +88,12 @@ cdef class pyMapPoint(object):
         return warpKeyFrame(self.thisptr.GetReferenceKeyFrame())
 
 cdef pyMapPoint warpMapPoint(MapPoint *ptr):
-    mp = pyMapPoint()
-    mp.thisptr = ptr
-    return mp
+    if not ptr.isBad():
+        mp = pyMapPoint()
+        mp.thisptr = ptr
+        return mp
+    else:
+        return None
 
 cdef object warpMapPoints(vector[MapPoint*] mps):
     return [warpMapPoint(mp) for mp in mps]

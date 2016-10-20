@@ -563,7 +563,7 @@ void Tracking::StereoInitialization()
 void Tracking::MonocularInitialization()
 {
 
-    if(!mpInitializer)
+    if(!mpInitializer) // == nullptr
     {
         // Set Reference Frame
         if(mCurrentFrame.mvKeys.size()>100)
@@ -1351,13 +1351,23 @@ void Tracking::UpdateLocalKeyFrames()
     }
 }
 
+ /* In relocalisation and loop detection, after querying the database, we compute
+  * the camera pose and a similarity transformation respectively, which
+  * will also serve as geometrical validation.
+  *
+  * We need first to compute a set of ORB correspondences between two images.
+  * We compare only ORB that belong to the same node at the second level of
+  * the vocabulary tree [1], this speeded up the brute force matching one
+  * order of magnitude, without reducing the matching performance significantly.
+  * This initial correspondences can be refined by an orientation consistency test [5].
+  */
 bool Tracking::Relocalization()
 {
     // Compute Bag of Words Vector
     mCurrentFrame.ComputeBoW();
 
     // Relocalization is performed when tracking is lost
-    // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
+    // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation, see KeyFrameDatabase.h
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 
     if(vpCandidateKFs.empty())

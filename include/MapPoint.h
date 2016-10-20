@@ -122,7 +122,8 @@ protected:
      // Mean viewing direction
      cv::Mat mNormalVector;
 
-     // Best descriptor to fast matching
+     // Best descriptor to fast matching, whose distance is least
+     // with respect to all associated descriptors, kind of a Mean Descriptor
      cv::Mat mDescriptor;
 
      // Reference KeyFrame

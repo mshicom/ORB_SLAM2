@@ -40,6 +40,13 @@ class MapPoint;
 class Frame;
 class KeyFrameDatabase;
 
+
+/*
+ * Keyframes are snapshots that summarize the visual information of
+ * the real world. Each keyframe stores all the ORBfeatures in the
+ * frame (associated or not to a map point), and the camera pose.
+ * In our framework, keyframes are not immutable, instead they can
+ * be discarded if an area is represented enoughby other keyframes */
 class KeyFrame
 {
 public:
@@ -58,6 +65,13 @@ public:
     void ComputeBoW();
 
     // Covisibility graph functions
+    /* To determining local maps or to boost the performance of the place
+     * recognizer. This covisibility information is stored in the system as an
+     * undirected weighted graph, where each node is a keyframe and an edge
+     * between two keyframes exists if they see at least θ common map points. The
+     * lowest θ the most interconnected is the graph, and so more expensive to
+     * traverse. Strasdat et. al [9] proposed typical values for θ between 15 and
+     * 30. The weight of the edges is the number of common map points. */
     void AddConnection(KeyFrame* pKF, const int &weight);
     void EraseConnection(KeyFrame* pKF);
     void UpdateConnections();
