@@ -15,6 +15,7 @@ import sys
 sys.path.append("/home/kaihong/workspace/gltes")
 sys.path.append("/home/nubot/data/workspace/gltes")
 from tools import *
+from vtk_visualizer import plotxyz
 
 if __name__ == '__main__':
 #    frames, wGc, K, _ = loaddata1()
@@ -28,13 +29,22 @@ if __name__ == '__main__':
 
     K = np.ascontiguousarray(K,'f')
     frames = [np.ascontiguousarray(f, np.uint8) for f in frames]
-#%%
-
+#%% run sequence
     slam = pySystem("/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/bumblebee.yaml")
 
     for f, ts in zip(frames, keys):
         print ts
         print slam.TrackMonocular(f,ts)
-    kfs = slam.getAllKeyFrames()
-    plt.waitforbuttonpress()
+    kfs = slam.GetAllKeyFrames()
+    mps = slam.GetAllMapPoints()
 
+#%% show keyframes
+
+    for f in kfs:
+        pis(image_set[f.mTimeStamp])
+        plt.pause(0.01)
+        plt.waitforbuttonpress()
+
+#%% show 3d map-points
+   p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps])
+   plotxyz(p3d)

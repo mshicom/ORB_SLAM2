@@ -17,6 +17,7 @@ np.import_array()
 from opencv cimport *
 #from eigency.core cimport *
 
+""" KeyFrame """
 cdef pyKeyFrame warpKeyFrame(KeyFrame *ptr):
     kf = pyKeyFrame()
     kf.thisptr = ptr
@@ -38,6 +39,10 @@ cdef class pyKeyFrame(object):
     @property
     def mTimeStamp(self):
         return self.thisptr.mTimeStamp
+    @property
+    def isBad(self):
+        return self.thisptr.isBad()
+
     def GetPose(self):
         return pyopencv_from(self.thisptr.GetPose())
     def GetPoseInverse(self):
@@ -58,7 +63,36 @@ cdef class pyKeyFrame(object):
     def GetCovisiblesByWeight(self, w):
         return warpKeyFrames(self.thisptr.GetCovisiblesByWeight(w))
 
+    def GetMapPoints(self):
+        cdef set[MapPoint*] mps = self.thisptr.GetMapPoints()
+        return [warpMapPoint(mp) for mp in mps]
 
+
+""" MapPoint """
+cdef class pyMapPoint(object):
+    cdef MapPoint *thisptr
+
+    def getWorldPos(self):
+        return pyopencv_from(self.thisptr.GetWorldPos())
+
+    def getNormal(self):
+        return pyopencv_from(self.thisptr.GetNormal())
+
+    def isBad(self):
+        return self.thisptr.isBad()
+
+    def getReferenceKeyFrame(self):
+        return warpKeyFrame(self.thisptr.GetReferenceKeyFrame())
+
+cdef pyMapPoint warpMapPoint(MapPoint *ptr):
+    mp = pyMapPoint()
+    mp.thisptr = ptr
+    return mp
+
+cdef object warpMapPoints(vector[MapPoint*] mps):
+    return [warpMapPoint(mp) for mp in mps]
+
+""" System """
 cdef class pySystem(object):
     cdef System *thisptr
     def __init__(self, string strSettingsFile,
@@ -86,9 +120,16 @@ cdef class pySystem(object):
     def Reset(self):
         self.thisptr.Reset()
 
-    def getState(self):
+    def GetState(self):
         return self.thisptr.mpTracker.mState
 
-    def getAllKeyFrames(self):
+    def GetAllKeyFrames(self):
         return warpKeyFrames(self.thisptr.mpMap.GetAllKeyFrames())
+
+    def GetAllMapPoints(self):
+        return warpMapPoints(self.thisptr.mpMap.GetAllMapPoints())
+
+    def GetReferenceMapPoints(self):
+        return warpMapPoints(self.thisptr.mpMap.GetReferenceMapPoints())
+
 

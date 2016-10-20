@@ -42,7 +42,7 @@ cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
     ctypedef KeyFrame* pKeyFrame
     cppclass KeyFrame:
         KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB)
-        void SetPose(const Mat &Tcw)
+        bool isBad()
         Mat GetPose()
         Mat GetPoseInverse()
         Mat GetCameraCenter()
@@ -53,12 +53,16 @@ cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
         vector[KeyFrame*] GetVectorCovisibleKeyFrames()
         vector[KeyFrame*] GetBestCovisibilityKeyFrames(const int &N)
         vector[KeyFrame*] GetCovisiblesByWeight(const int &w)
+
+        set[MapPoint*] GetMapPoints()
         long unsigned int mnId
         const long unsigned int mnFrameId
         const double mTimeStamp
 
         BowVector mBowVec
         FeatureVector mFeatVec
+
+        void SetPose(const Mat &Tcw)
 
 cdef extern from "../../include/KeyFrameDatabase.h" namespace "ORB_SLAM2" nogil:
     cppclass KeyFrameDatabase:
