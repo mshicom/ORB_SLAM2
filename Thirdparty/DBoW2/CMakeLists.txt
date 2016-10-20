@@ -24,6 +24,7 @@ set(SRCS_DUTILS
   DUtils/Random.cpp
   DUtils/Timestamp.cpp)
 
+set(CMAKE_MODULE_PATH /opt/ros/groovy/share/opencv2/ ${CMAKE_MODULE_PATH})
 find_package(OpenCV REQUIRED)
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

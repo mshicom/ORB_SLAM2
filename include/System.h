@@ -24,6 +24,7 @@
 
 #include<string>
 #include<thread>
+#include<chrono>
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
@@ -110,7 +111,7 @@ public:
     // SaveMap(const string &filename);
     // LoadMap(const string &filename);
 
-private:
+//private:
 
     // Input sensor
     eSensor mSensor;
