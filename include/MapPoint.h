@@ -24,6 +24,7 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
+#include "Serializer.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
@@ -37,6 +38,33 @@ class Frame;
 
 
 class MapPoint
+/*
+ * Map points form the structure of the 3D reconstruction of
+ * the world. Each map point corresponds to a textured planar
+ * patch in the world whose position has been triangulated from
+ * different views and refined by bundle adjustment.
+ *
+ * In this work, points correspond to ORB features in the images,
+ * so map points are triangulation of FAST corners. The patch size and
+ * orientation in the world depends on the scale level in which
+ * the FAST were detected and the orientation of the keypoints.
+ *
+ * Each map point has associated a patch normal n, which
+ * is the mean vector of the viewing directions (the rays that
+ * join the point with the keyframe camera centers).
+ *
+ * A single map point may be associated with ORB features in several
+ * keyframes, and so there are several descriptors associated. In
+ * the absence of mismatches this variety of descriptors accounts
+ * for the different appearances of the map point depending on
+ * the viewpoint. To speed up data association each map point
+ * stores a representative descriptor D, whose distance is least
+ * with respect to all associated descriptors.
+ *
+ * In addition each map point stores the maximum dmax and minimum
+ * distance dmin at which it can be observed according to the scale
+ * and distance at which it has been observed.
+*/
 {
 public:
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);

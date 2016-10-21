@@ -32,6 +32,11 @@ cdef extern from "../../include/MapPoint.h" namespace "ORB_SLAM2" nogil:
         Mat GetNormal()
         KeyFrame* GetReferenceKeyFrame()
         bool isBad()
+        long unsigned int mnId
+        long unsigned int nNextId
+        long int mnFirstKFid
+        long int mnFirstFrame
+        int nObs
 
 cdef extern from "../../include/Frame.h" namespace "ORB_SLAM2" nogil:
     cppclass Frame:

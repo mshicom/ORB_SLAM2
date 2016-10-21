@@ -74,6 +74,9 @@ cdef class pyKeyFrame(object):
 """ MapPoint """
 cdef class pyMapPoint(object):
     cdef MapPoint *thisptr
+    @property
+    def Id(self):
+        return long(self.thisptr.mnId)
 
     def getWorldPos(self):
         return pyopencv_from(self.thisptr.GetWorldPos())
@@ -86,6 +89,10 @@ cdef class pyMapPoint(object):
 
     def getReferenceKeyFrame(self):
         return warpKeyFrame(self.thisptr.GetReferenceKeyFrame())
+
+    def __repr__(self):
+        return "MapPoint(Id=%s, Pos=%s)" % (self.Id, self.getWorldPos().ravel())
+
 
 cdef pyMapPoint warpMapPoint(MapPoint *ptr):
     if not ptr.isBad():
@@ -138,4 +145,6 @@ cdef class pySystem(object):
     def GetReferenceMapPoints(self):
         return warpMapPoints(self.thisptr.mpMap.GetReferenceMapPoints())
 
+def GdbBreak():
+    breakpoint()
 

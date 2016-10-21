@@ -54,6 +54,11 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     mNormalVector = mWorldPos - Ow;
     mNormalVector = mNormalVector/cv::norm(mNormalVector);
 
+    /*
+     * Each map point stores the maximum dmax and minimum
+     * distance dmin at which it can be observed according to the scale
+     * and distance at which it has been observed.
+    */
     cv::Mat PC = Pos - Ow;
     const float dist = cv::norm(PC);
     const int level = pFrame->mvKeysUn[idxF].octave;

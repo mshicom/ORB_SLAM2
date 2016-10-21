@@ -58,7 +58,7 @@ class Frame;
  * scores of all those keyframes that are directly connected in the
  * covisibility graph. The one with the highest individual score,
  * being the keyframe match. Instead of getting just the best match,
- * we get all those matches whose scores are higher than the 90% of
+ * we get all those matches whose scores are higher than the 75% of
  * the best score.*/
 class KeyFrameDatabase
 {

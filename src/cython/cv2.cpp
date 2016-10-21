@@ -5,6 +5,12 @@
 
 #include <opencv2/core/core.hpp>
 
+#include <csignal>
+
+static void breakpoint()
+{
+    std::raise(SIGINT);
+}
 
 
 //static PyObject* opencv_error = 0;

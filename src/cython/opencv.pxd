@@ -9,16 +9,16 @@ from libcpp cimport bool
 cimport numpy as np # for np.ndarray
 
 cdef extern from "cv2.cpp":
-    cdef object pyopencv_from(const Mat& m)
-    cdef int pyopencv_to(object o, Mat& m) except 0
-
+    object pyopencv_from(const Mat& m)
+    int pyopencv_to(object o, Mat& m) except 0
+    void breakpoint()
 
 cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     enum MatType:
         MAGIC_VAL = 0x42FF0000
         AUTO_STEP=0
 
-    cdef cppclass Size_[_Tp]:
+    cppclass Size_[_Tp]:
         Size_()
         Size_(_Tp width, _Tp height)
         _Tp width, height
@@ -27,7 +27,7 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     ctypedef Size_[ int ]    Size2i
     ctypedef Size2i    Size
 
-    cdef cppclass Mat:
+    cppclass Mat:
         Mat()
         Mat(Size size, int type) except +
         Mat(int rows, int cols, int type) except +
@@ -43,7 +43,7 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
         unsigned char * data
         Mat 	clone()
 
-    cdef cppclass Mat_[_Tp]:
+    cppclass Mat_[_Tp]:
         Mat_()
         Mat_ (int _rows, int _cols)
         Mat_ (int _rows, int _cols, const _Tp &value)
@@ -60,47 +60,47 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
         Mat_ & 	operator= (const MatExpr &e)
         pass
 
-    cdef cppclass MatExpr:
+    cppclass MatExpr:
         MatExpr()
         MatExpr (const Mat &m)
 
-    cdef cppclass Matx33f "Matx< float, 3, 3 >":
+    cppclass Matx33f "Matx< float, 3, 3 >":
         pass
-    cdef cppclass Vec2b "Vec<uchar, 2>":
+    cppclass Vec2b "Vec<uchar, 2>":
         pass
-    cdef cppclass Vec2d "Vec<double, 2>":
+    cppclass Vec2d "Vec<double, 2>":
         pass
-    cdef cppclass Vec2f "Vec<float, 2>":
+    cppclass Vec2f "Vec<float, 2>":
         pass
-    cdef cppclass Vec2i "Vec<int, 2>":
+    cppclass Vec2i "Vec<int, 2>":
         pass
-    cdef cppclass Vec2s "Vec<short, 2>":
+    cppclass Vec2s "Vec<short, 2>":
         pass
-    cdef cppclass Vec2w "Vec<ushort, 2>":
+    cppclass Vec2w "Vec<ushort, 2>":
         pass
-    cdef cppclass Vec3b "Vec<uchar, 3>":
+    cppclass Vec3b "Vec<uchar, 3>":
         pass
-    cdef cppclass Vec3d "Vec<double, 3>":
+    cppclass Vec3d "Vec<double, 3>":
         pass
-    cdef cppclass Vec3f "Vec<float, 3>":
+    cppclass Vec3f "Vec<float, 3>":
         pass
-    cdef cppclass Vec3i "Vec<int, 3>":
+    cppclass Vec3i "Vec<int, 3>":
         pass
-    cdef cppclass Vec3s "Vec<short, 3>":
+    cppclass Vec3s "Vec<short, 3>":
         pass
-    cdef cppclass Vec3w "Vec<ushort, 3>":
+    cppclass Vec3w "Vec<ushort, 3>":
         pass
-    cdef cppclass Vec4b "Vec<uchar, 4>":
+    cppclass Vec4b "Vec<uchar, 4>":
         pass
-    cdef cppclass Vec4d "Vec<double, 4>":
+    cppclass Vec4d "Vec<double, 4>":
         pass
-    cdef cppclass Vec4f "Vec<float, 4>":
+    cppclass Vec4f "Vec<float, 4>":
         pass
-    cdef cppclass Vec4i "Vec<int, 4>":
+    cppclass Vec4i "Vec<int, 4>":
         pass
-    cdef cppclass Vec4s "Vec<short, 4>":
+    cppclass Vec4s "Vec<short, 4>":
         pass
-    cdef cppclass Vec4w "Vec<ushort, 4>":
+    cppclass Vec4w "Vec<ushort, 4>":
         pass
 
     ctypedef Mat_[ uchar ] Mat1b
@@ -128,19 +128,19 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     ctypedef Mat_[ Vec4s ] Mat4s
     ctypedef Mat_[ Vec4w ] Mat4w
 
-    cdef cppclass InputArray:
+    cppclass InputArray:
         InputArray()
         InputArray() except +
         InputArray(Mat) except +
         Mat getMat(int i)
 
-    cdef cppclass OutputArray(InputArray):
+    cppclass OutputArray(InputArray):
         OutputArray()
         OutputArray() except +
         OutputArray(Mat) except +
         Mat getMatRef(int i)
 
-    cdef cppclass Point_[_Tp]:
+    cppclass Point_[_Tp]:
         Point_ ()
         Point_ (_Tp _x, _Tp _y)
         Point_ (const Point_ &pt)
@@ -151,7 +151,7 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     ctypedef Point_[ int ] 	Point2i
     ctypedef Point2i 	Point
 
-    cdef cppclass Point3_[_Tp]:
+    cppclass Point3_[_Tp]:
         Point3_ (_Tp _x, _Tp _y, _Tp _z)
         Point3_ (const Point3_ &pt)
         Point3_ (const Point_[_Tp] &pt)
@@ -160,7 +160,7 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     ctypedef Point3_[ float ] Point3f
     ctypedef Point3_[ int ] 	Point3i
 
-    cdef cppclass Rect_[_Tp]:
+    cppclass Rect_[_Tp]:
         Rect_ ()
         Rect_ (_Tp _x, _Tp _y, _Tp _width, _Tp _height)
         Rect_ (const Rect_ &r)
@@ -172,13 +172,13 @@ cdef extern from "opencv2/core/core.hpp" namespace "cv" nogil:
     ctypedef Rect_[ int ] 	Rect2i
     ctypedef Rect2i 	Rect
 
-    cdef cppclass Scalar_[_Tp]:
+    cppclass Scalar_[_Tp]:
         Scalar_()
         Scalar_ (_Tp v0, _Tp v1, _Tp v2=0, _Tp v3=0)
         Scalar_ (_Tp v0)
     ctypedef Scalar_[ double ] 	Scalar
 
-    cdef cppclass KeyPoint:
+    cppclass KeyPoint:
         Point2f pt
         float size,angle,response
         int octave,class_id
