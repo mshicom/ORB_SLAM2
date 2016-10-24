@@ -32,9 +32,11 @@ if __name__ == '__main__':
 #%% run sequence
     slam = pySystem("/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/bumblebee.yaml")
 
+    track_rec = []
     for f, ts in zip(frames, keys):
-        print ts
-        print slam.TrackMonocular(f,ts)
+        res = slam.TrackMonocular(f,ts)
+        track_rec.append((ts, res))
+        print res
     kfs = slam.GetAllKeyFrames()
     mps = slam.GetAllMapPoints()
 
@@ -46,10 +48,13 @@ if __name__ == '__main__':
         plt.waitforbuttonpress()
 
 #%% show 3d map-points
-   p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps if not mp.isBad()])
-   plotxyz(p3d)
+    p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps if not mp.isBad()])
+    plotxyz(p3d)
 
 #%% localization mode
-   slam.SetLocalizationMode(1)
-   slam.TrackMonocular(f,ts)
+    slam.SetLocalizationMode(1)
+    slam.TrackMonocular(f,ts)
 
+#%%
+    ts = keys[0]
+    slam.reloc(image_set[ts], ts)

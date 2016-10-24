@@ -10,7 +10,7 @@ from libcpp.string cimport string
 # Function to be called at initialization
 
 import cython
-
+import os
 np.import_array()
 
 #from lsd_slam cimport Frame,DepthMap
@@ -19,7 +19,7 @@ from opencv cimport *
 
 """ KeyFrame """
 cdef pyKeyFrame warpKeyFrame(KeyFrame *ptr):
-    if not ptr.isBad():
+    if ptr!= NULL and not ptr.isBad():
         kf = pyKeyFrame()
         kf.thisptr = ptr
         return kf
@@ -95,7 +95,7 @@ cdef class pyMapPoint(object):
 
 
 cdef pyMapPoint warpMapPoint(MapPoint *ptr):
-    if not ptr.isBad():
+    if ptr!=NULL and not ptr.isBad():
         mp = pyMapPoint()
         mp.thisptr = ptr
         return mp
@@ -109,10 +109,11 @@ cdef object warpMapPoints(vector[MapPoint*] mps):
 cdef class pySystem(object):
     cdef System *thisptr
     def __init__(self, string strSettingsFile,
-                 string strVocFile="/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/Vocabulary/ORBvoc.txt",
-                 eSensor sensor = MONOCULAR,
-                 bool bUseViewer = 0):
-        self.thisptr = new System(strVocFile, strSettingsFile, sensor, bUseViewer)
+                 string strVocFile,
+                 eSensor sensor = MONOCULAR):
+        if not (os.path.isfile(strSettingsFile) and os.path.isfile(strVocFile)):
+            raise RuntimeError("path not correct")
+        self.thisptr = new System(strVocFile, strSettingsFile, sensor, bUseViewer=0)
 
     def __dealloc__(self):
         self.thisptr.Shutdown()
@@ -144,6 +145,16 @@ cdef class pySystem(object):
 
     def GetReferenceMapPoints(self):
         return warpMapPoints(self.thisptr.mpMap.GetReferenceMapPoints())
+
+    def reloc(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
+        cdef Mat cv_im
+        pyopencv_to(im, cv_im)
+
+        cdef Frame CurrentFrame = self.thisptr.mpTracker.makeFrame(cv_im, timestamp)
+        cdef bool isSucess = self.thisptr.mpTracker.Relocalization(CurrentFrame)
+        if isSucess:
+            return pyopencv_from(CurrentFrame.mTcw)
+
 
 def GdbBreak():
     breakpoint()

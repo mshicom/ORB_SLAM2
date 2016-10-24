@@ -24,7 +24,6 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 #include"Map.h"
-#include "Serializer.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
@@ -71,6 +70,12 @@ public:
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 
     void SetWorldPos(const cv::Mat &Pos);
+        //LoopClosing::CorrectLoop()
+        //LoopClosing::RunGlobalBundleAdjustment
+        //Optimizer::OptimizeEssentialGraph
+        //Optimizer::BundleAdjustment
+        //Optimizer::LocalBundleAdjustment
+
     cv::Mat GetWorldPos();
 
     cv::Mat GetNormal();
@@ -172,7 +177,7 @@ protected:
      Map* mpMap;
 
      std::mutex mMutexPos;
-     std::mutex mMutexFeatures;
+     std::mutex mMutexFeatures;   
 };
 
 } //namespace ORB_SLAM

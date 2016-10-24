@@ -20,6 +20,14 @@ cdef extern from "../../Thirdparty/DBoW2/DBoW2/FeatureVector.h" namespace "DBoW2
     cppclass FeatureVector:
         pass
 
+cdef extern from "../../include/ORBextractor.h" namespace "ORB_SLAM2":
+    cppclass ORBextractor:
+        pass
+
+cdef extern from "../../include/ORBVocabulary.h" namespace "ORB_SLAM2":
+    cppclass ORBVocabulary:
+        pass
+
 cdef extern from "../../include/Map.h" namespace "ORB_SLAM2" nogil:
     cppclass Map:
         vector[KeyFrame*] GetAllKeyFrames()
@@ -40,8 +48,15 @@ cdef extern from "../../include/MapPoint.h" namespace "ORB_SLAM2" nogil:
 
 cdef extern from "../../include/Frame.h" namespace "ORB_SLAM2" nogil:
     cppclass Frame:
-        pass
+        Frame()
+        Frame(const Mat &imGray, const double &timeStamp, ORBextractor* extractor, ORBVocabulary* voc, Mat &K, Mat &distCoef, const float &bf, const float &thDepth);
+        void ExtractORB(int flag, const Mat &im)
+        void ComputeBoW()
 
+        long unsigned int mnId
+        vector[MapPoint*] mvpMapPoints
+        vector[KeyPoint] mvKeys
+        Mat mTcw
 
 cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
     ctypedef KeyFrame* pKeyFrame
@@ -83,6 +98,8 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
 
     cppclass Tracking:
         eTrackingState mState
+        bool Relocalization(Frame &CurrentFrame)
+        Frame makeFrame(const Mat &im, const double &timestamp)
         pass
 
 

@@ -234,6 +234,28 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     return mCurrentFrame.mTcw.clone();
 }
 
+Frame Tracking::makeFrame(const cv::Mat &im, const double &timestamp)
+{
+    if(im.channels()==3)
+    {
+        if(mbRGB)
+            cvtColor(im,im,CV_RGB2GRAY);
+        else
+            cvtColor(im,im,CV_BGR2GRAY);
+    }
+    else if(im.channels()==4)
+    {
+        if(mbRGB)
+            cvtColor(im,im,CV_RGBA2GRAY);
+        else
+            cvtColor(im,im,CV_BGRA2GRAY);
+    }
+
+    if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
+        return Frame(im,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+    else
+        return Frame(im,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+}
 
 cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 {
@@ -1361,14 +1383,14 @@ void Tracking::UpdateLocalKeyFrames()
   * order of magnitude, without reducing the matching performance significantly.
   * This initial correspondences can be refined by an orientation consistency test [5].
   */
-bool Tracking::Relocalization()
+bool Tracking::Relocalization(Frame& CurrentFrame)
 {
     // Compute Bag of Words Vector
-    mCurrentFrame.ComputeBoW();
+    CurrentFrame.ComputeBoW();
 
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation, see KeyFrameDatabase.h
-    vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
+    vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&CurrentFrame);
 
     if(vpCandidateKFs.empty())
         return false;
@@ -1397,7 +1419,7 @@ bool Tracking::Relocalization()
             vbDiscarded[i] = true;
         else
         {
-            int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
+            int nmatches = matcher.SearchByBoW(pKF,CurrentFrame,vvpMapPointMatches[i]);
             if(nmatches<15)
             {
                 vbDiscarded[i] = true;
@@ -1405,7 +1427,7 @@ bool Tracking::Relocalization()
             }
             else
             {
-                PnPsolver* pSolver = new PnPsolver(mCurrentFrame,vvpMapPointMatches[i]);
+                PnPsolver* pSolver = new PnPsolver(CurrentFrame,vvpMapPointMatches[i]);
                 pSolver->SetRansacParameters(0.99,10,300,4,0.5,5.991);
                 vpPnPsolvers[i] = pSolver;
                 nCandidates++;
@@ -1443,7 +1465,7 @@ bool Tracking::Relocalization()
             // If a Camera Pose is computed, optimize
             if(!Tcw.empty())
             {
-                Tcw.copyTo(mCurrentFrame.mTcw);
+                Tcw.copyTo(CurrentFrame.mTcw);
 
                 set<MapPoint*> sFound;
 
@@ -1453,49 +1475,49 @@ bool Tracking::Relocalization()
                 {
                     if(vbInliers[j])
                     {
-                        mCurrentFrame.mvpMapPoints[j]=vvpMapPointMatches[i][j];
+                        CurrentFrame.mvpMapPoints[j]=vvpMapPointMatches[i][j];
                         sFound.insert(vvpMapPointMatches[i][j]);
                     }
                     else
-                        mCurrentFrame.mvpMapPoints[j]=NULL;
+                        CurrentFrame.mvpMapPoints[j]=NULL;
                 }
 
-                int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                int nGood = Optimizer::PoseOptimization(&CurrentFrame);
 
                 if(nGood<10)
                     continue;
 
-                for(int io =0; io<mCurrentFrame.N; io++)
-                    if(mCurrentFrame.mvbOutlier[io])
-                        mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
+                for(int io =0; io<CurrentFrame.N; io++)
+                    if(CurrentFrame.mvbOutlier[io])
+                        CurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
 
                 // If few inliers, search by projection in a coarse window and optimize again
                 if(nGood<50)
                 {
-                    int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
+                    int nadditional =matcher2.SearchByProjection(CurrentFrame,vpCandidateKFs[i],sFound,10,100);
 
                     if(nadditional+nGood>=50)
                     {
-                        nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                        nGood = Optimizer::PoseOptimization(&CurrentFrame);
 
                         // If many inliers but still not enough, search by projection again in a narrower window
                         // the camera has been already optimized with many points
                         if(nGood>30 && nGood<50)
                         {
                             sFound.clear();
-                            for(int ip =0; ip<mCurrentFrame.N; ip++)
-                                if(mCurrentFrame.mvpMapPoints[ip])
-                                    sFound.insert(mCurrentFrame.mvpMapPoints[ip]);
-                            nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,64);
+                            for(int ip =0; ip<CurrentFrame.N; ip++)
+                                if(CurrentFrame.mvpMapPoints[ip])
+                                    sFound.insert(CurrentFrame.mvpMapPoints[ip]);
+                            nadditional =matcher2.SearchByProjection(CurrentFrame,vpCandidateKFs[i],sFound,3,64);
 
                             // Final optimization
                             if(nGood+nadditional>=50)
                             {
-                                nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+                                nGood = Optimizer::PoseOptimization(&CurrentFrame);
 
-                                for(int io =0; io<mCurrentFrame.N; io++)
-                                    if(mCurrentFrame.mvbOutlier[io])
-                                        mCurrentFrame.mvpMapPoints[io]=NULL;
+                                for(int io =0; io<CurrentFrame.N; io++)
+                                    if(CurrentFrame.mvbOutlier[io])
+                                        CurrentFrame.mvpMapPoints[io]=NULL;
                             }
                         }
                     }
@@ -1512,16 +1534,15 @@ bool Tracking::Relocalization()
         }
     }
 
-    if(!bMatch)
-    {
-        return false;
-    }
-    else
-    {
-        mnLastRelocFrameId = mCurrentFrame.mnId;
-        return true;
-    }
+    return bMatch;
+}
 
+bool Tracking::Relocalization()
+{
+    bool sucess = Relocalization(mCurrentFrame);
+    if(sucess)
+        mnLastRelocFrameId = mCurrentFrame.mnId;
+    return sucess;
 }
 
 void Tracking::Reset()
