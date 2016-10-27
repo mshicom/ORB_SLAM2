@@ -30,7 +30,9 @@ if __name__ == '__main__':
     K = np.ascontiguousarray(K,'f')
     frames = [np.ascontiguousarray(f, np.uint8) for f in frames]
 #%% run sequence
-    slam = pySystem("/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/bumblebee.yaml")
+   #    base_path = "/home/nubot/rosmake_ws/sandbox/ORB_SLAM2/"
+    base_path = "/home/kaihong/workspace/rosbuild_ws/sandbox/ORB_SLAM2/"
+    slam = pySystem(base_path+"bumblebee.yaml", base_path+"Vocabulary/ORBvoc.txt")
 
     track_rec = []
     for f, ts in zip(frames, keys):

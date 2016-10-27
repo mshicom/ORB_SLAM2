@@ -30,6 +30,7 @@ cdef extern from "../../include/ORBVocabulary.h" namespace "ORB_SLAM2":
 
 cdef extern from "../../include/Map.h" namespace "ORB_SLAM2" nogil:
     cppclass Map:
+        Map()
         vector[KeyFrame*] GetAllKeyFrames()
         vector[MapPoint*] GetAllMapPoints()
         vector[MapPoint*] GetReferenceMapPoints()
@@ -86,6 +87,7 @@ cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
 
 cdef extern from "../../include/KeyFrameDatabase.h" namespace "ORB_SLAM2" nogil:
     cppclass KeyFrameDatabase:
+        KeyFrameDatabase()
         vector[KeyFrame*] DetectRelocalizationCandidates(Frame* F);
 
 cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
@@ -100,7 +102,8 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
         eTrackingState mState
         bool Relocalization(Frame &CurrentFrame)
         Frame makeFrame(const Mat &im, const double &timestamp)
-        pass
+        InformWarmStarted()
+
 
 
 cdef extern from "../../include/LocalMapping.h" namespace "ORB_SLAM2" nogil:
@@ -121,6 +124,9 @@ cdef extern from "../../include/System.h" namespace "ORB_SLAM2" nogil:
 
     cppclass System:
         System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer)
+        System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer,
+               KeyFrameDatabase* pKFDatabase, Map* pMap)
+
         Mat TrackStereo(const Mat &imLeft, const Mat &imRight, const double &timestamp)
         Mat TrackRGBD(const Mat &im, const Mat &depthmap, const double &timestamp);
         Mat TrackMonocular(const Mat &im, const double &timestamp);
@@ -133,5 +139,7 @@ cdef extern from "../../include/System.h" namespace "ORB_SLAM2" nogil:
         Tracking* mpTracker
         LocalMapping* mpLocalMapper
         LoopClosing* mpLoopCloser
+        KeyFrameDatabase* mpKeyFrameDatabase;
+        Map* mpMap;
 
 

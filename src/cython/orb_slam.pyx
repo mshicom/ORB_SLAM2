@@ -107,44 +107,51 @@ cdef object warpMapPoints(vector[MapPoint*] mps):
 
 """ System """
 cdef class pySystem(object):
-    cdef System *thisptr
+    cdef System *thisptr[2]
     def __init__(self, string strSettingsFile,
                  string strVocFile,
                  eSensor sensor = MONOCULAR):
         if not (os.path.isfile(strSettingsFile) and os.path.isfile(strVocFile)):
             raise RuntimeError("path not correct")
-        self.thisptr = new System(strVocFile, strSettingsFile, sensor, bUseViewer=0)
+        self.thisptr[0] = new System(strVocFile, strSettingsFile, sensor, 0)
+        self.thisptr[1] = new System(strVocFile, strSettingsFile, sensor, 0,
+                            self.thisptr[0].mpKeyFrameDatabase,
+                            self.thisptr[0].mpMap)
 
     def __dealloc__(self):
-        self.thisptr.Shutdown()
-        del self.thisptr
+        self.thisptr[0].Shutdown()
+        self.thisptr[1].Shutdown()
+#        del self.thisptr[0]
+#        del self.thisptr[1]
+#        del self.mapptr
+#        del self.dbptr
 
-    def TrackMonocular(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
+    def TrackMonocular(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp, int which=0):
         cdef Mat image,res;
         pyopencv_to(im, image)
-        cTw = self.thisptr.TrackMonocular(image, timestamp)
+        cTw = self.thisptr[which].TrackMonocular(image, timestamp)
         return pyopencv_from(cTw)
 
-    def SetLocalizationMode(self, bool on_off=True):
+    def SetLocalizationMode(self, bool on_off=True, int which=0):
         if on_off:
-            self.thisptr.ActivateLocalizationMode()
+            self.thisptr[which].ActivateLocalizationMode()
         else:
-            self.thisptr.DeactivateLocalizationMode()
+            self.thisptr[which].DeactivateLocalizationMode()
 
-    def Reset(self):
-        self.thisptr.Reset()
+    def Reset(self, int which=0):
+        self.thisptr[which].Reset()
 
-    def GetState(self):
-        return self.thisptr.mpTracker.mState
+    def GetState(self, int which=0):
+        return self.thisptr[which].mpTracker.mState
 
-    def GetAllKeyFrames(self):
-        return warpKeyFrames(self.thisptr.mpMap.GetAllKeyFrames())
+    def GetAllKeyFrames(self, int which=0):
+        return warpKeyFrames(self.thisptr[which].mpMap.GetAllKeyFrames())
 
-    def GetAllMapPoints(self):
-        return warpMapPoints(self.thisptr.mpMap.GetAllMapPoints())
+    def GetAllMapPoints(self, int which=0):
+        return warpMapPoints(self.thisptr[which].mpMap.GetAllMapPoints())
 
-    def GetReferenceMapPoints(self):
-        return warpMapPoints(self.thisptr.mpMap.GetReferenceMapPoints())
+    def GetReferenceMapPoints(self, int which=0):
+        return warpMapPoints(self.thisptr[which].mpMap.GetReferenceMapPoints())
 
     def reloc(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
         cdef Mat cv_im

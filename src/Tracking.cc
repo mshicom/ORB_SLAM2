@@ -1627,6 +1627,10 @@ void Tracking::InformOnlyTracking(const bool &flag)
     mbOnlyTracking = flag;
 }
 
+void Tracking::InformWarmStarted()
+{
+    mState=LOST;
+}
 
 
 } //namespace ORB_SLAM
