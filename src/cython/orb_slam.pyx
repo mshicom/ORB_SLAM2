@@ -117,6 +117,7 @@ cdef class pySystem(object):
         self.thisptr[1] = new System(strVocFile, strSettingsFile, sensor, 0,
                             self.thisptr[0].mpKeyFrameDatabase,
                             self.thisptr[0].mpMap)
+        self.thisptr[1].mpTracker.InformWarmStarted()
 
     def __dealloc__(self):
         self.thisptr[0].Shutdown()
@@ -153,15 +154,14 @@ cdef class pySystem(object):
     def GetReferenceMapPoints(self, int which=0):
         return warpMapPoints(self.thisptr[which].mpMap.GetReferenceMapPoints())
 
-    def reloc(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
+    def reloc(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp, int which=0):
         cdef Mat cv_im
         pyopencv_to(im, cv_im)
 
-        cdef Frame CurrentFrame = self.thisptr.mpTracker.makeFrame(cv_im, timestamp)
-        cdef bool isSucess = self.thisptr.mpTracker.Relocalization(CurrentFrame)
+        cdef Frame CurrentFrame = self.thisptr[which].mpTracker.makeFrame(cv_im, timestamp)
+        cdef bool isSucess = self.thisptr[which].mpTracker.Relocalization(CurrentFrame)
         if isSucess:
             return pyopencv_from(CurrentFrame.mTcw)
-
 
 def GdbBreak():
     breakpoint()

@@ -102,7 +102,7 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
         eTrackingState mState
         bool Relocalization(Frame &CurrentFrame)
         Frame makeFrame(const Mat &im, const double &timestamp)
-        InformWarmStarted()
+        void InformWarmStarted()
 
 
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2)
 
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE RelwithDebugInfo)
+  SET(CMAKE_BUILD_TYPE Debug) #RelwithDebugInfo
 ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})

@@ -75,7 +75,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mpKeyFrameDatabase = (pKFDatabase==nullptr) ? new KeyFrameDatabase(*mpVocabulary) : pKFDatabase;
 
     //Create the Map
-    mpMap = (pMap==nullptr)? new Map() : mpMap;
+    mpMap = (pMap==nullptr)? new Map() : pMap;
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);

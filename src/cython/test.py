@@ -35,12 +35,27 @@ if __name__ == '__main__':
     slam = pySystem(base_path+"bumblebee.yaml", base_path+"Vocabulary/ORBvoc.txt")
 
     track_rec = []
-    for f, ts in zip(frames, keys):
+    for f, ts in zip(frames[:10], keys[:10]):
         res = slam.TrackMonocular(f,ts)
         track_rec.append((ts, res))
         print res
+    print "now do the tracking concurrently..."
+    which = 0
+    for f, ts in zip(frames[10:], keys[10:]):
+        res = slam.TrackMonocular(f,ts, np.mod(which,2))
+        which += 1
+        track_rec.append((ts, res))
+        print res
+
+
     kfs = slam.GetAllKeyFrames()
     mps = slam.GetAllMapPoints()
+
+#%% test tracker 2
+    slam.SetLocalizationMode(True, 1)
+    for f, ts in reversed(zip(frames, keys)):
+        res = slam.TrackMonocular(f,ts, 1)
+        print res
 
 #%% show keyframes
 
@@ -57,6 +72,10 @@ if __name__ == '__main__':
     slam.SetLocalizationMode(1)
     slam.TrackMonocular(f,ts)
 
-#%%
+#%% relocalization mode
     ts = keys[0]
     slam.reloc(image_set[ts], ts)
+
+
+
+
