@@ -59,6 +59,15 @@ target_link_libraries(Mono
 ${LIBS}
 )
 
+# Node for multiple monocular camera
+rosbuild_add_executable(Multi
+src/ros_multi.cc
+)
+
+target_link_libraries(Multi
+${LIBS}
+)
+
 # Node for stereo camera
 rosbuild_add_executable(Stereo
 src/ros_stereo.cc

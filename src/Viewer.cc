@@ -54,8 +54,10 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
 void Viewer::Run()
 {
     mbFinished = false;
+    stringstream ss;
+    ss << "ORB-SLAM2: Map Viewer" << std::rand();
 
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
+    pangolin::CreateWindowAndBind(ss.str(),1024,768);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
