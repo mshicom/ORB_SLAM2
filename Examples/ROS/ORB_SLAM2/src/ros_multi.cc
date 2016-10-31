@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     ORB_SLAM2::System SLAM2(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR,true, SLAM.mpKeyFrameDatabase, SLAM.mpMap);
     ImageGrabber igb2(&SLAM2);
     ros::Subscriber sub2 = nodeHandler.subscribe("/stereo/11170132/right", 1, &ImageGrabber::GrabImage,&igb2);
-    SLAM2.ActivateLocalizationMode();
+//    SLAM2.ActivateLocalizationMode();
     SLAM2.mpTracker->InformWarmStarted();
 
     ros::spin();
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     SLAM2.Shutdown();
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
 
     ros::shutdown();
 

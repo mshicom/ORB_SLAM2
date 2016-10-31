@@ -27,6 +27,8 @@
 
 #include<opencv2/core/core.hpp>
 #include<mutex>
+#include"shared_mutex.h"
+#include <atomic>
 
 namespace ORB_SLAM2
 {
@@ -115,7 +117,7 @@ public:
 
 public:
     long unsigned int mnId;
-    static long unsigned int nNextId;
+    static std::atomic_ulong nNextId;
     long int mnFirstKFid;
     long int mnFirstFrame;
     int nObs;
@@ -176,8 +178,8 @@ protected:
 
      Map* mpMap;
 
-     std::mutex mMutexPos;
-     std::mutex mMutexFeatures;   
+     shared_mutex mMutexPos;
+     shared_mutex mMutexFeatures;
 };
 
 } //namespace ORB_SLAM

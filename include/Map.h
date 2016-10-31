@@ -26,7 +26,7 @@
 #include <set>
 
 #include <mutex>
-
+#include "shared_mutex.h"
 
 
 namespace ORB_SLAM2
@@ -72,7 +72,7 @@ protected:
 
     long unsigned int mnMaxKFid;
 
-    std::mutex mMutexMap;
+    shared_mutex mMutexMap;
 };
 
 } //namespace ORB_SLAM
