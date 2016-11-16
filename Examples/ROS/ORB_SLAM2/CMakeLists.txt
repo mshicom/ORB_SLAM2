@@ -67,7 +67,7 @@ src/ros_mono_odom.cpp
 )
 
 target_link_libraries(Mono_odom
-${LIBS}
+${LIBS} tf_conversions
 )
 
 
