@@ -42,9 +42,13 @@ public:
                                  const bool bRobust = true);
     void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=5, bool *pbStopFlag=NULL,
                                        const unsigned long nLoopKF=0, const bool bRobust = true);
+    // used in LocalMapping::Run
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
+
+    // used in Tracking::TrackReferenceKeyFrame / TrackWithMotionModel / TrackLocalMap / Relocalization
     int static PoseOptimization(Frame* pFrame);
 
+    // used in LoopClosing::CorrectLoop
     // if bFixScale is true, 6DoF optimization (stereo,rgbd), 7DoF otherwise (mono)
     void static OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,

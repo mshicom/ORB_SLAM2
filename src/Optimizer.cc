@@ -33,6 +33,7 @@
 #include "Converter.h"
 
 #include<mutex>
+#include <sstream>
 
 namespace ORB_SLAM2
 {
@@ -363,6 +364,9 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
     if(nInitialCorrespondences<3)
         return 0;
+//    std::stringstream ss;
+//    ss<< "/tmp/" << pFrame->mnId <<".g2o";
+//    optimizer.save(ss.str().c_str());
 
     // We perform 4 optimizations, after each optimization we classify observation as inlier/outlier
     // At the next optimization, outliers are not included, but at the end they can be classified as inliers again.
