@@ -4,7 +4,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 rosbuild_init()
 
 IF(NOT ROS_BUILD_TYPE)
-  SET(ROS_BUILD_TYPE Release)
+  SET(ROS_BUILD_TYPE debug)
 ENDIF()
 
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
@@ -39,6 +39,8 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/../../../
 ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
+${EIGEN3_INCLUDE_DIRS}
+
 )
 
 set(LIBS 
@@ -58,6 +60,16 @@ src/ros_mono.cc
 target_link_libraries(Mono
 ${LIBS}
 )
+
+# Node for monocular camera with odmo
+rosbuild_add_executable(Mono_odom
+src/ros_mono_odom.cpp
+)
+
+target_link_libraries(Mono_odom
+${LIBS}
+)
+
 
 # Node for stereo camera
 rosbuild_add_executable(Stereo
