@@ -30,6 +30,13 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake_modules)
 
+# for gtest
+set(gmock_SOURCE_DIR gtest/googlemock)
+include_directories(${gmock_SOURCE_DIR}/include
+                    ${gmock_SOURCE_DIR}
+                    ${gmock_SOURCE_DIR}/../googletest/include
+                    ${gmock_SOURCE_DIR}/../googletest)
+
 find_package(OpenCV 2.4.3 REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
@@ -50,6 +57,7 @@ ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
+${PROJECT_SOURCE_DIR}/../../../build/test/libgmock.a
 )
 
 # Node for monocular camera
@@ -88,4 +96,6 @@ src/ros_rgbd.cc
 target_link_libraries(RGBD
 ${LIBS}
 )
+
+
 
