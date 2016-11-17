@@ -51,13 +51,15 @@ class ImageGrabber {
 
 class OdomGrabber {
  public:
+   OdomGrabber() :cache_(ros::Duration(60*10)) {}
+
   void receiveOdom(const nav_msgs::OdometryConstPtr& msg) {
     tf::StampedTransform t;
     t.stamp_ = msg->header.stamp;
     t.frame_id_ = msg->header.frame_id;
     t.child_frame_id_ = "base_link";
     tf::poseMsgToTF(msg->pose.pose, t);
-    cache.insertData(tf::TransformStorage(t, 1, 0));
+    cache_.insertData(tf::TransformStorage(t, 1, 0));
     std::cout << "At " << t.stamp_.toSec() <<" [now:"<<ros::Time::now().toSec()<<"] insert tf:\n"
               << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
   }
@@ -65,7 +67,7 @@ class OdomGrabber {
   bool queryPos(double timestamp, g2o::SE3Quat& quat) {
     tf::TransformStorage out;
     std::string err;
-    bool is_success = cache.getData(ros::Time(timestamp), out, &err);
+    bool is_success = cache_.getData(ros::Time(timestamp), out, &err);
     if (is_success) {
       Eigen::Quaterniond q;
       Eigen::Vector3d t;
@@ -80,7 +82,7 @@ class OdomGrabber {
   }
 
  protected:
-  tf::TimeCache cache;
+  tf::TimeCache cache_;
 };
 
 int main(int argc, char** argv) {

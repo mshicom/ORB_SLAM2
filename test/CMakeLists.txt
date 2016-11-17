@@ -28,3 +28,6 @@ add_executable(test_orb test_orb.cpp)
 target_link_libraries(test_orb ORB_SLAM2 pthread gmock ${catkin_LIBRARIES}) #gtest_main
 add_test(test_orb ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_orb)
 
+add_executable(test_est test_estimate_rel_transform.cpp)
+target_link_libraries(test_est ORB_SLAM2 pthread gmock) #gtest_main
+add_test(test_est ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_est)

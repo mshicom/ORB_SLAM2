@@ -365,6 +365,7 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
     f.open(filename.c_str());
     f << fixed;
 
+    g2o::SE3Quat quat;
     for(size_t i=0; i<vpKFs.size(); i++)
     {
         KeyFrame* pKF = vpKFs[i];
@@ -373,12 +374,17 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
         if(pKF->isBad())
             continue;
+        if(getOdometryInfo(pKF->mTimeStamp,quat) == false)
+            continue;
+        g2o::Vector7d p = quat.toVector();
 
         cv::Mat R = pKF->GetRotation().t();
         vector<float> q = Converter::toQuaternion(R);
         cv::Mat t = pKF->GetCameraCenter();
         f << setprecision(6) << pKF->mTimeStamp << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2)
-          << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+          << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3]
+          << " " << p(0) << " " << p(1) << " " << p(2) << " " << p(3) << " " << p(4) << " " << p(5) << " " << p(6)
+          <<  endl;
 
     }
 

@@ -308,8 +308,8 @@ void Tracking::Track()
                 CheckReplacedInLastFrame();
 
                 // Plan A
-                if(mCurrentFrame.hasOdometryReading)    // only if viable
-                    bOK = TrackWithOdom();
+                //if(mCurrentFrame.hasOdometryReading)    // only if viable
+                //    bOK = TrackWithOdom();
 
                 // Plan B
                 if(bOK==false)
@@ -566,7 +566,7 @@ void Tracking::StereoInitialization()
 void Tracking::MonocularInitialization()
 {
 
-    if(!mpInitializer) // == nullptr
+    if(mpInitializer==nullptr)
     {
         // Set Reference Frame
         if(mCurrentFrame.mvKeys.size()>100)
