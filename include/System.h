@@ -25,6 +25,7 @@
 #include<string>
 #include<thread>
 #include<chrono>
+#include<functional>  // for std::function
 #include<opencv2/core/core.hpp>
 
 #include "Tracking.h"
@@ -36,6 +37,10 @@
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
+
+namespace g2o {
+class SE3Quat;
+}
 
 namespace ORB_SLAM2
 {
@@ -77,6 +82,13 @@ public:
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
+
+    // Set Odometry information provider
+    bool getOdometryInfo(double timestamp, g2o::SE3Quat& out_odometry_reading);
+    void SetOdometryFunctor(std::function<bool(double, g2o::SE3Quat&)> function_object);
+    template<class T, class U>
+    void SetOdometryFunctor(T function_address,  U* obj)
+    { SetOdometryFunctor(std::bind(function_address, obj, std::placeholders::_1, std::placeholders::_2)); }
 
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
@@ -157,6 +169,8 @@ public:
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;
+
+    std::function<bool(double, g2o::SE3Quat&)> mOdometryFunctor;
 };
 
 }// namespace ORB_SLAM

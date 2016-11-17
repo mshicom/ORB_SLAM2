@@ -224,8 +224,8 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    if(mDepthMapFactor!=1 || imDepth.type()!=CV_32F);
-    imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
+    if(mDepthMapFactor!=1 || imDepth.type()!=CV_32F)
+        imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
 
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
@@ -259,6 +259,9 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
+    // query odometry info
+    mCurrentFrame.hasOdometryReading = mpSystem->getOdometryInfo(timestamp, mCurrentFrame.mOdometryReading);
+
     Track();
 
     return mCurrentFrame.mTcw.clone();
@@ -291,7 +294,7 @@ void Tracking::Track()
     else
     {
         // System is initialized. Track Frame.
-        bool bOK;
+        bool bOK = false;
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
@@ -304,21 +307,21 @@ void Tracking::Track()
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
-                if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
-                {
+                // Plan A
+                if(mCurrentFrame.hasOdometryReading)    // only if viable
+                    bOK = TrackWithOdom();
+
+                // Plan B
+                if(bOK==false)
+                    if(!mVelocity.empty() && mCurrentFrame.mnId>=mnLastRelocFrameId+2)  // only if viable
+                        bOK = TrackWithMotionModel();
+
+                // Plan C
+                if(bOK==false)
                     bOK = TrackReferenceKeyFrame();
-                }
-                else
-                {
-                    bOK = TrackWithMotionModel();
-                    if(!bOK)
-                        bOK = TrackReferenceKeyFrame();
-                }
             }
             else
-            {
                 bOK = Relocalization();
-            }
         }
         else
         {
@@ -917,6 +920,69 @@ bool Tracking::TrackWithMotionModel()
                 nmatchesMap++;
         }
     }    
+
+    if(mbOnlyTracking)
+    {
+        mbVO = nmatchesMap<10;
+        return nmatches>20;
+    }
+
+    return nmatchesMap>=10;
+}
+
+bool Tracking::TrackWithOdom()
+{
+    ORBmatcher matcher(0.9,true);
+
+    // Update last frame pose according to its reference keyframe
+    // Create "visual odometry" points
+    UpdateLastFrame();
+
+    mCurrentFrame.SetPose(Converter::toCvMat(mCurrentFrame.mOdometryReading));
+
+    fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+
+    // Project points seen in previous frame
+    int th;
+    if(mSensor!=System::STEREO)
+        th=15;
+    else
+        th=7;
+    int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
+
+    // If few matches, uses a wider window search
+    if(nmatches<20)
+    {
+        fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
+    }
+
+    if(nmatches<20)
+        return false;
+
+    // Optimize frame pose with all matches
+    Optimizer::PoseOptimization(&mCurrentFrame);
+
+    // Discard outliers
+    int nmatchesMap = 0;
+    for(int i =0; i<mCurrentFrame.N; i++)
+    {
+        if(mCurrentFrame.mvpMapPoints[i])
+        {
+            if(mCurrentFrame.mvbOutlier[i])
+            {
+                MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
+
+                mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
+                mCurrentFrame.mvbOutlier[i]=false;
+                pMP->mbTrackInView = false;
+                pMP->mnLastFrameSeen = mCurrentFrame.mnId;
+                nmatches--;
+            }
+            else if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+                nmatchesMap++;
+        }
+    }
 
     if(mbOnlyTracking)
     {

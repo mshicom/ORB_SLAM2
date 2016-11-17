@@ -131,7 +131,7 @@ protected:
     bool TrackReferenceKeyFrame();
     void UpdateLastFrame();
     bool TrackWithMotionModel();
-
+    bool TrackWithOdom();
     bool Relocalization();
 
     void UpdateLocalMap();

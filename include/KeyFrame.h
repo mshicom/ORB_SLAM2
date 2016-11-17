@@ -30,7 +30,7 @@
 #include "KeyFrameDatabase.h"
 
 #include <mutex>
-
+#include <g2o/types/slam3d/se3quat.h>
 
 namespace ORB_SLAM2
 {
@@ -130,6 +130,9 @@ public:
         return pKF1->mnId<pKF2->mnId;
     }
 
+    // Odometry
+    g2o::SE3Quat mOdometryReading;
+    bool hasOdometryReading;
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:

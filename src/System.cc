@@ -31,7 +31,7 @@ namespace ORB_SLAM2
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer):mSensor(sensor),mbReset(false),mbActivateLocalizationMode(false),
-        mbDeactivateLocalizationMode(false)
+        mbDeactivateLocalizationMode(false),mOdometryFunctor(nullptr)
 {
     // Output welcome message
     cout << endl <<
@@ -110,6 +110,19 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+}
+
+void System::SetOdometryFunctor(std::function<bool(double, g2o::SE3Quat&)> function_object)
+{
+    mOdometryFunctor = function_object;
+}
+
+bool System::getOdometryInfo(double timestamp, g2o::SE3Quat& out_odometry_reading)
+{
+    if(mOdometryFunctor!=nullptr)
+        return mOdometryFunctor(timestamp, out_odometry_reading);
+    else
+        return false;
 }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)

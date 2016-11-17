@@ -58,13 +58,14 @@ class OdomGrabber {
     t.child_frame_id_ = "base_link";
     tf::poseMsgToTF(msg->pose.pose, t);
     cache.insertData(tf::TransformStorage(t, 1, 0));
-    std::cout << "At " << t.stamp_.nsec << " insert tf:\n" << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
+    std::cout << "At " << t.stamp_.toSec() <<" [now:"<<ros::Time::now().toSec()<<"] insert tf:\n"
+              << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
   }
 
-  bool queryPos(ros::Time ts, g2o::SE3Quat& quat) {
+  bool queryPos(double timestamp, g2o::SE3Quat& quat) {
     tf::TransformStorage out;
     std::string err;
-    bool is_success = cache.getData(ts, out, &err);
+    bool is_success = cache.getData(ros::Time(timestamp), out, &err);
     if (is_success) {
       Eigen::Quaterniond q;
       Eigen::Vector3d t;
@@ -72,6 +73,7 @@ class OdomGrabber {
       quat.setRotation(q);
       tf::vectorTFToEigen(out.translation_, t);
       quat.setTranslation(t);
+      std::cout << "At " << timestamp <<" query tf:\n" << t << std::endl;
     } else
       std::cout << err << std::endl;
     return is_success;
@@ -80,7 +82,7 @@ class OdomGrabber {
  protected:
   tf::TimeCache cache;
 };
-OdomGrabber ogb;
+
 int main(int argc, char** argv) {
   ros::init(argc, argv, "Mono");
   ros::start();
@@ -91,11 +93,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  OdomGrabber ogb;
   // Create SLAM system. It initializes all system threads and gets ready to process frames.
   ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR, true);
+  SLAM.SetOdometryFunctor(&OdomGrabber::queryPos, &ogb);
 
   ImageGrabber igb(&SLAM);
-
   ros::NodeHandle nodeHandler;
   message_filters::Subscriber<sensor_msgs::Image> sub(nodeHandler, "/camera/image_raw", 1);
   message_filters::TimeSequencer<sensor_msgs::Image> seq(sub, ros::Duration(0.1), ros::Duration(0.01), 50);
@@ -125,9 +128,6 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg) {
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
-  g2o::SE3Quat quat;
-  ros::Time req = cv_ptr->header.stamp;
-  bool res = ogb.queryPos(req, quat);
-  if (res == true)
-    std::cout << "At " << req.nsec << " query successful :\n" << quat.translation() << std::endl;
+  mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
+
 }

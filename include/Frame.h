@@ -32,6 +32,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <g2o/types/slam3d/se3quat.h>
+
 namespace ORB_SLAM2
 {
 #define FRAME_GRID_ROWS 48
@@ -187,7 +189,9 @@ public:
 
     static bool mbInitialComputations;
 
-
+    // Odometry
+    g2o::SE3Quat mOdometryReading;
+    bool hasOdometryReading;
 private:
 
     // Undistort keypoints given OpenCV distortion parameters.
