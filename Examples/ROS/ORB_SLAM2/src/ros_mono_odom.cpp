@@ -29,39 +29,60 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
 #include <tf_conversions/tf_eigen.h>
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Geometry>
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/eigen.hpp>
 
 #include <g2o/types/slam3d/se3quat.h>
 #include "../../../include/System.h"
+
+#include "CamOdoCalibration.h"
+
 using namespace std;
 using namespace Eigen;
 
 class ImageGrabber {
  public:
-  ImageGrabber(ORB_SLAM2::System* pSLAM) : mpSLAM(pSLAM) {}
+  ImageGrabber(ORB_SLAM2::System* pSLAM) : mpSLAM(pSLAM), scale(3.73146) {
+    Eigen::Matrix4d h;
+    h << 0.999981, 0.00615895, 0.000149131, 0.287422,   //
+        -4.33681e-19, -0.0242066, 0.999707, -0.153225,  //
+        0.00616075, -0.999688, -0.0242062, 0,           //
+        0, 0, 0, 1;
+
+    tf::transformEigenToTF(Eigen::Affine3d(h), mTodm_cam);
+  }
 
   void GrabImage(const sensor_msgs::ImageConstPtr& msg);
 
   ORB_SLAM2::System* mpSLAM;
+
+  std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>> cam_trajectory;
+  std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>> odm_trajectory;
+  tf::TransformBroadcaster mTfBr;
+  tf::Transform mTodm_cam;
+  double scale;
 };
 
 class OdomGrabber {
  public:
-   OdomGrabber() :cache_(ros::Duration(60*10)) {}
+  OdomGrabber() : cache_(ros::Duration(60 * 10)) {}
 
   void receiveOdom(const nav_msgs::OdometryConstPtr& msg) {
     tf::StampedTransform t;
     t.stamp_ = msg->header.stamp;
-    t.frame_id_ = msg->header.frame_id;
+    t.frame_id_ = "odom";
     t.child_frame_id_ = "base_link";
     tf::poseMsgToTF(msg->pose.pose, t);
     cache_.insertData(tf::TransformStorage(t, 1, 0));
-    std::cout << "At " << t.stamp_.toSec() <<" [now:"<<ros::Time::now().toSec()<<"] insert tf:\n"
+    std::cout << "At " << t.stamp_.toSec() << " [now:" << ros::Time::now().toSec() << "] insert tf:\n"
               << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
+
+    mTfBr.sendTransform(t);
   }
 
   bool queryPos(double timestamp, g2o::SE3Quat& quat) {
@@ -75,7 +96,7 @@ class OdomGrabber {
       quat.setRotation(q);
       tf::vectorTFToEigen(out.translation_, t);
       quat.setTranslation(t);
-      std::cout << "At " << timestamp <<" query tf:\n" << t << std::endl;
+      std::cout << "At " << timestamp << " query tf:\n" << t << std::endl;
     } else
       std::cout << err << std::endl;
     return is_success;
@@ -83,6 +104,7 @@ class OdomGrabber {
 
  protected:
   tf::TimeCache cache_;
+  tf::TransformBroadcaster mTfBr;
 };
 
 int main(int argc, char** argv) {
@@ -94,6 +116,8 @@ int main(int argc, char** argv) {
     ros::shutdown();
     return 1;
   }
+
+  camodocal::CamOdoCalibration calib;
 
   OdomGrabber ogb;
   // Create SLAM system. It initializes all system threads and gets ready to process frames.
@@ -110,12 +134,18 @@ int main(int argc, char** argv) {
 
   ros::spin();
 
+  // Save camera trajectory
+  // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+
+  calib.addMotionSegment(igb.odm_trajectory, igb.cam_trajectory, false);
+  calib.setVerbose(true);
+  Eigen::Matrix4d odmTcam;
+  calib.calibrate(odmTcam);
+  std::cout << odmTcam << std::endl;
+  calib.writeMotionSegmentsToFile("cam_odo_trajectory.txt");
+
   // Stop all threads
   SLAM.Shutdown();
-
-  // Save camera trajectory
-  SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-
   ros::shutdown();
 
   return 0;
@@ -130,6 +160,26 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg) {
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
-  mpSLAM->TrackMonocular(cv_ptr->image,cv_ptr->header.stamp.toSec());
+  double timestamp = cv_ptr->header.stamp.toSec();
+  cv::Mat cam_abs_pos = mpSLAM->TrackMonocular(cv_ptr->image, timestamp);  // Tcw
 
+  g2o::SE3Quat odm_abs_pos;
+  if (!cam_abs_pos.empty() && mpSLAM->getOdometryInfo(timestamp, odm_abs_pos)) {
+    // 1. to Twc
+    cam_abs_pos = cam_abs_pos.inv().t();
+
+    // 2. camera
+    if (cam_abs_pos.type() == CV_32F) {
+      cam_trajectory.push_back(Eigen::Map<Eigen::Matrix4f>(reinterpret_cast<float*>(cam_abs_pos.data)).cast<double>());
+    } else if (cam_abs_pos.type() == CV_64F)
+      cam_trajectory.push_back(Eigen::Map<Eigen::Matrix4d>(reinterpret_cast<double*>(cam_abs_pos.data)));
+    // 3. odometry
+    odm_trajectory.push_back(odm_abs_pos.to_homogeneous_matrix());
+
+    tf::Transform tfTwc;
+    tf::transformEigenToTF(Eigen::Affine3d(cam_trajectory.back()), tfTwc);
+    tfTwc.setOrigin(tfTwc.getOrigin() * scale);
+    mTfBr.sendTransform(tf::StampedTransform(tfTwc.inverse(), msg->header.stamp, "ORB_SLAM/Camera", "ORB_SLAM/World"));
+    mTfBr.sendTransform(tf::StampedTransform(mTodm_cam, msg->header.stamp, "base_link", "ORB_SLAM/Camera"));
+  }
 }
