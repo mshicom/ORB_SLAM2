@@ -28,9 +28,8 @@ ceres
 glog
 )
 
-add_executable(test_calib CamOdoCalibration_test.cc ../src/CamOdoCalibration.cc)
-target_link_libraries(test_calib  ${LIBS})
-
 add_executable(test_tf test_tf.cpp ../src/CamOdoCalibration.cc)
 target_link_libraries(test_tf  ${LIBS} ${catkin_LIBRARIES} )
 
+add_executable(test_bagfile test_orb.cpp)
+target_link_libraries(test_bagfile ${LIBS} ${catkin_LIBRARIES}) #gtest_main

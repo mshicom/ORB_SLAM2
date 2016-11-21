@@ -40,20 +40,27 @@
 #include <g2o/types/slam3d/se3quat.h>
 #include "../../../include/System.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "CamOdoCalibration.h"
-
+#include "EigenUtils.h"
 using namespace std;
 using namespace Eigen;
 
 class ImageGrabber {
  public:
-  ImageGrabber(ORB_SLAM2::System* pSLAM) : mpSLAM(pSLAM), scale(3.73146) {
+  ImageGrabber(ORB_SLAM2::System* pSLAM) : mpSLAM(pSLAM), scale(3.81665) {
     Eigen::Matrix4d h;
-    h << 0.999981, 0.00615895, 0.000149131, 0.287422,   //
-        -4.33681e-19, -0.0242066, 0.999707, -0.153225,  //
-        0.00616075, -0.999688, -0.0242062, 0,           //
+    h << -0.844318, 0.000418584, 0.535842, 0.232158,   //
+        -0.535842, 0.000653704, -0.844318, -0.680315,  //
+        -0.0007037, -1, -0.000327639, 0,               //
         0, 0, 0, 1;
 
+    double roll, pitch, yaw;
+    roll = atan2(h(2, 1), h(2, 2)) / M_PI * 180;
+    pitch = atan2(-h(2, 0), sqrt(h(2, 1) * h(2, 1) + h(2, 2) * h(2, 2))) / M_PI * 180;
+    yaw = atan2(h(1, 0), h(0, 0)) / M_PI * 180;
+    std::cout << "roll:" << roll << " pitch:" << pitch << " yaw:" << yaw << std::endl;
     tf::transformEigenToTF(Eigen::Affine3d(h), mTodm_cam);
   }
 
@@ -70,7 +77,17 @@ class ImageGrabber {
 
 class OdomGrabber {
  public:
-  OdomGrabber() : cache_(ros::Duration(60 * 10)) {}
+  OdomGrabber() : cache_(ros::Duration(60 * 10)) {
+    Eigen::Matrix4d h;
+    h << -0.844318, 0.000418584, 0.535842, 0.232158,   //
+        -0.535842, 0.000653704, -0.844318, -0.680315,  //
+        -0.0007037, -1, -0.000327639, 0,               //
+        0, 0, 0, 1;
+
+    oTc.setRotation(Eigen::Quaterniond(h.block<3, 3>(0, 0)));
+    oTc.setTranslation(h.block<3, 1>(0, 3));
+    cTo = oTc.inverse();
+  }
 
   void receiveOdom(const nav_msgs::OdometryConstPtr& msg) {
     tf::StampedTransform t;
@@ -79,8 +96,8 @@ class OdomGrabber {
     t.child_frame_id_ = "base_link";
     tf::poseMsgToTF(msg->pose.pose, t);
     cache_.insertData(tf::TransformStorage(t, 1, 0));
-    std::cout << "At " << t.stamp_.toSec() << " [now:" << ros::Time::now().toSec() << "] insert tf:\n"
-              << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
+    //    std::cout << "At " << t.stamp_.toSec() << " [now:" << ros::Time::now().toSec() << "] insert tf:\n"
+    //              << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
 
     mTfBr.sendTransform(t);
   }
@@ -96,7 +113,7 @@ class OdomGrabber {
       quat.setRotation(q);
       tf::vectorTFToEigen(out.translation_, t);
       quat.setTranslation(t);
-      std::cout << "At " << timestamp << " query tf:\n" << t << std::endl;
+      // std::cout << "At " << timestamp << " query tf:\n" << t << std::endl;
     } else
       std::cout << err << std::endl;
     return is_success;
@@ -105,6 +122,57 @@ class OdomGrabber {
  protected:
   tf::TimeCache cache_;
   tf::TransformBroadcaster mTfBr;
+  g2o::SE3Quat oTc, cTo;
+};
+
+class MocapGrabber {
+ public:
+  MocapGrabber() : cache_(ros::Duration(60 * 10)) {
+    Eigen::Matrix4d h;
+    h << -0.844318, 0.000418584, 0.535842, 0.232158,   //
+        -0.535842, 0.000653704, -0.844318, -0.680315,  //
+        -0.0007037, -1, -0.000327639, 0,               //
+        0, 0, 0, 1;
+
+    oTc.setRotation(Eigen::Quaterniond(h.block<3, 3>(0, 0)));
+    oTc.setTranslation(h.block<3, 1>(0, 3));
+    cTo = oTc.inverse();
+  }
+
+  void receiveOdom(const geometry_msgs::PoseStampedConstPtr& msg) {
+    tf::StampedTransform t;
+    t.stamp_ = msg->header.stamp;
+    t.frame_id_ = "odom";
+    t.child_frame_id_ = "base_link";
+    tf::poseMsgToTF(msg->pose, t);
+    cache_.insertData(tf::TransformStorage(t, 1, 0));
+    //    std::cout << "At " << t.stamp_.toSec() << " [now:" << ros::Time::now().toSec() << "] insert tf:\n"
+    //              << Eigen::Map<Eigen::Vector3d>(t.getOrigin()) << std::endl;
+
+    mTfBr.sendTransform(t);
+  }
+
+  bool queryPos(double timestamp, g2o::SE3Quat& quat) {
+    tf::TransformStorage out;
+    std::string err;
+    bool is_success = cache_.getData(ros::Time(timestamp), out, &err);
+    if (is_success) {
+      Eigen::Quaterniond q;
+      Eigen::Vector3d t;
+      tf::quaternionTFToEigen(out.rotation_, q);
+      quat.setRotation(q);
+      tf::vectorTFToEigen(out.translation_, t);
+      quat.setTranslation(t);
+      // std::cout << "At " << timestamp << " query tf:\n" << t << std::endl;
+    } else
+      std::cout << err << std::endl;
+    return is_success;
+  }
+
+ protected:
+  tf::TimeCache cache_;
+  tf::TransformBroadcaster mTfBr;
+  g2o::SE3Quat oTc, cTo;
 };
 
 int main(int argc, char** argv) {
@@ -142,6 +210,7 @@ int main(int argc, char** argv) {
   Eigen::Matrix4d odmTcam;
   calib.calibrate(odmTcam);
   std::cout << odmTcam << std::endl;
+
   calib.writeMotionSegmentsToFile("cam_odo_trajectory.txt");
 
   // Stop all threads

@@ -1,4 +1,4 @@
-#include "CamOdoCalibration.h"
+#include "../src/CamOdoCalibration.h"
 #include "EigenUtils.h"
 
 #include <ros/ros.h>
@@ -21,12 +21,16 @@ typedef std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>> 
 double random(const double& a, const double& b) { return static_cast<double>(rand()) / RAND_MAX * (b - a) + a; }
 double d2r(double deg) { return deg / 180.0 * M_PI; }
 
+#define USE_RVIZ 1
+
 TEST(trytf, genTrajectory) {
+#if USE_RVIZ
   ros::init(std::map<std::string, std::string>(), "test");
   ros::start();
   ros::NodeHandle nodeHandler;
-
   tf::TransformBroadcaster tfbroadcaster;
+
+#endif
   tf::Transform odm_tf, cam_tf;
 
   const double radius = 1;
@@ -83,7 +87,7 @@ TEST(trytf, genTrajectory) {
   std::cout << "Est:\n" << oTc_est << std::endl;
   std::cout << "True:\n" << oTc.matrix() << std::endl;
 
-#if 1
+#if USE_RVIZ
   tf::Transform oTc_est_tf;
   tf::transformEigenToTF(Eigen::Affine3d(oTc_est), oTc_est_tf);
 
@@ -99,9 +103,17 @@ TEST(trytf, genTrajectory) {
 #else
     tfbroadcaster.sendTransform(tf::StampedTransform(oTc_est_tf, ros::Time::now(), "base_link", "camera_est"));
     tfbroadcaster.sendTransform(tf::StampedTransform(oTc_tf, ros::Time::now(), "base_link", "camera"));
-
 #endif
     ros::spinOnce();
   }
-#endif
+#endif // USE_RVIZ
+
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (i == 2 && j == 3) {
+        continue;
+      }
+      EXPECT_NEAR(oTc(i, j), oTc_est(i, j), 1e-10) << "Elements differ at (" << i << "," << j << ")";
+    }
+  }
 }
