@@ -21,6 +21,8 @@ class CamOdoCalibration {
  public:
   CamOdoCalibration();
 
+  bool addMotion(const Eigen::Ref<const Eigen::Matrix4d>& H_odo, const Eigen::Ref<const Eigen::Matrix4d>& H_cam);
+
   bool addMotionSegment(const std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>& H_odo_,
                         const std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>& H_cam_,
                         bool is_relative_position = false);

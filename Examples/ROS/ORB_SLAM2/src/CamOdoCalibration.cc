@@ -109,6 +109,33 @@ bool CamOdoCalibration::addMotionSegment(
   return true;
 }
 
+bool CamOdoCalibration::addMotion(const Eigen::Ref<const Eigen::Matrix4d>& H_odo,
+                                  const Eigen::Ref<const Eigen::Matrix4d>& H_cam) {
+  if (mSegments.empty()) mSegments.emplace_back();
+
+  MotionSegment& seg = mSegments.back();
+
+  Eigen::Matrix3d R_odo = H_odo.block<3, 3>(0, 0);
+  Eigen::Vector3d t_odo = H_odo.block<3, 1>(0, 3);
+
+  Motion odoMotion;
+  odoMotion.rotation = RotationToAngleAxis(R_odo);
+  odoMotion.translation = t_odo;
+
+  seg.odoMotions.push_back(odoMotion);
+
+  Eigen::Matrix3d R_cam = H_cam.block<3, 3>(0, 0);
+  Eigen::Vector3d t_cam = H_cam.block<3, 1>(0, 3);
+
+  Motion camMotion;
+  camMotion.rotation = RotationToAngleAxis(R_cam);
+  camMotion.translation = t_cam;
+
+  seg.camMotions.push_back(camMotion);
+
+  return true;
+}
+
 void CamOdoCalibration::getCurrentCameraMotion(Eigen::Vector3d& rotation, Eigen::Vector3d& translation) const {
   if (mSegments.empty()) {
     return;

@@ -21,7 +21,7 @@ typedef std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>> 
 double random(const double& a, const double& b) { return static_cast<double>(rand()) / RAND_MAX * (b - a) + a; }
 double d2r(double deg) { return deg / 180.0 * M_PI; }
 
-#define USE_RVIZ 1
+#define USE_RVIZ 0
 
 TEST(trytf, genTrajectory) {
 #if USE_RVIZ
@@ -106,7 +106,7 @@ TEST(trytf, genTrajectory) {
 #endif
     ros::spinOnce();
   }
-#endif // USE_RVIZ
+#endif  // USE_RVIZ
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
@@ -116,4 +116,51 @@ TEST(trytf, genTrajectory) {
       EXPECT_NEAR(oTc(i, j), oTc_est(i, j), 1e-10) << "Elements differ at (" << i << "," << j << ")";
     }
   }
+}
+
+TEST(trytf, genTrajectory2) {
+  const int step = 100;
+
+  camodocal::CamOdoCalibration calib;
+  calib.setVerbose(true);
+
+  // the transform from camera to base_link
+  Eigen::Affine3d oTc;
+  oTc = Eigen::Translation3d(0, -0.1, 0)                                   //
+        * Eigen::AngleAxisd(-M_PI / 180.0 * 15, Eigen::Vector3d::UnitZ())  //
+        * Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX())             //
+        * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());             //
+  Eigen::Affine3d oTc_inv = oTc.inverse();
+
+  // make the odom and camera trajectory
+  Eigen::Affine3d movement;  // o[i]To[i+1]
+  for (int i = 0; i < step; i++) {
+    movement = Eigen::Translation3d(random(0, 0.05), random(0, 0.05), 0)  //
+               * Eigen::AngleAxisd(d2r(random(-10., 10.)), Eigen::Vector3d::UnitZ());
+    calib.addMotion(movement.matrix(), (oTc_inv * movement * oTc).matrix());  // o[i]To[i+1], c[i]Tc[i+1]
+  }
+  Eigen::Matrix4d oTc_est;
+  calib.calibrate(oTc_est);
+  std::cout << "Est:\n" << oTc_est << std::endl;
+  std::cout << "True:\n" << oTc.matrix() << std::endl;
+  calib.writeMotionSegmentsToFile("genTrajectory2.txt");
+
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (i == 2 && j == 3) {
+        continue;
+      }
+      EXPECT_NEAR(oTc(i, j), oTc_est(i, j), 1e-10) << "Elements differ at (" << i << "," << j << ")";
+    }
+  }
+}
+
+TEST(trytf, genTrajectory3) {
+  camodocal::CamOdoCalibration calib;
+  calib.setVerbose(true);
+
+  calib.readMotionSegmentsFromFile("/home/nubot/data/workspace/trajectorycalib/py.txt");
+  Eigen::Matrix4d oTc_est;
+  calib.calibrate(oTc_est);
+  std::cout << "Est:\n" << oTc_est << std::endl;
 }
