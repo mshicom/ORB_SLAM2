@@ -42,8 +42,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "CamOdoCalibration.h"
-#include "EigenUtils.h"
+
 using namespace std;
 using namespace Eigen;
 
@@ -185,8 +184,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  camodocal::CamOdoCalibration calib;
-
   OdomGrabber ogb;
   // Create SLAM system. It initializes all system threads and gets ready to process frames.
   ORB_SLAM2::System SLAM(argv[1], argv[2], ORB_SLAM2::System::MONOCULAR, true);
@@ -203,15 +200,7 @@ int main(int argc, char** argv) {
   ros::spin();
 
   // Save camera trajectory
-  // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-
-  calib.addMotionSegment(igb.odm_trajectory, igb.cam_trajectory, false);
-  calib.setVerbose(true);
-  Eigen::Matrix4d odmTcam;
-  calib.calibrate(odmTcam);
-  std::cout << odmTcam << std::endl;
-
-  calib.writeMotionSegmentsToFile("cam_odo_trajectory.txt");
+  SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
 
   // Stop all threads
   SLAM.Shutdown();
@@ -237,16 +226,9 @@ void ImageGrabber::GrabImage(const sensor_msgs::ImageConstPtr& msg) {
     // 1. to Twc
     cam_abs_pos = cam_abs_pos.inv().t();
 
-    // 2. camera
-    if (cam_abs_pos.type() == CV_32F) {
-      cam_trajectory.push_back(Eigen::Map<Eigen::Matrix4f>(reinterpret_cast<float*>(cam_abs_pos.data)).cast<double>());
-    } else if (cam_abs_pos.type() == CV_64F)
-      cam_trajectory.push_back(Eigen::Map<Eigen::Matrix4d>(reinterpret_cast<double*>(cam_abs_pos.data)));
-    // 3. odometry
-    odm_trajectory.push_back(odm_abs_pos.to_homogeneous_matrix());
-
+    Eigen::Map<Eigen::Matrix4f> wTc(reinterpret_cast<float*>(cam_abs_pos.data));
     tf::Transform tfTwc;
-    tf::transformEigenToTF(Eigen::Affine3d(cam_trajectory.back()), tfTwc);
+    tf::transformEigenToTF(Eigen::Affine3d(wTc.cast<double>()), tfTwc);
     tfTwc.setOrigin(tfTwc.getOrigin() * scale);
     mTfBr.sendTransform(tf::StampedTransform(tfTwc.inverse(), msg->header.stamp, "ORB_SLAM/Camera", "ORB_SLAM/World"));
     mTfBr.sendTransform(tf::StampedTransform(mTodm_cam, msg->header.stamp, "base_link", "ORB_SLAM/Camera"));

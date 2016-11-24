@@ -72,11 +72,11 @@ ${LIBS}
 # Node for monocular camera with odmo
 find_package(Ceres REQUIRED)
 rosbuild_add_executable(Mono_odom
-src/ros_mono_odom.cpp src/CamOdoCalibration.cc
+src/ros_mono_odom.cpp
 )
 
 target_link_libraries(Mono_odom
-${LIBS} tf_conversions ${CERES_LIBRARIES} glog
+${LIBS} tf_conversions
 )
 
 

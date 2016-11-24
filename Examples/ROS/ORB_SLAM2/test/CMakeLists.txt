@@ -24,12 +24,7 @@ ${PROJECT_SOURCE_DIR}/../../../Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 ${PROJECT_SOURCE_DIR}/../../../build/test/libgmock.a
-ceres
-glog
 )
-
-add_executable(test_tf test_tf.cpp ../src/CamOdoCalibration.cc)
-target_link_libraries(test_tf  ${LIBS} ${catkin_LIBRARIES} )
 
 add_executable(test_bagfile test_orb.cpp)
 target_link_libraries(test_bagfile ${LIBS} ${catkin_LIBRARIES}) #gtest_main
