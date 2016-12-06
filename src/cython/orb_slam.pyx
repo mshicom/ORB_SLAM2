@@ -34,11 +34,11 @@ cdef object warpKeyPoints(vector[KeyPoint] kps):
 """ Frame """
 cdef class pyFrame(object):
     cdef Frame *thisptr
-    cdef bool _isSelfOwned
+    cdef bool isSelfOwned
     def __init__(self, isSelfOwned = False):
-        self._isSelfOwned = isSelfOwned
+        self.isSelfOwned = isSelfOwned
     def __dealloc__(self):
-        if self._isSelfOwned:
+        if self.isSelfOwned:
             del self.thisptr
     @property
     def mnId(self):
@@ -98,11 +98,11 @@ cdef class pyFrame(object):
 """ KeyFrame """
 cdef class pyKeyFrame(object):
     cdef KeyFrame *thisptr
-    cdef bool _isSelfOwned
+    cdef bool isSelfOwned
     def __init__(self, isSelfOwned = False):
-        self._isSelfOwned = isSelfOwned
+        self.isSelfOwned = isSelfOwned
     def __dealloc__(self):
-        if self._isSelfOwned:
+        if self.isSelfOwned:
             del self.thisptr
 
     @property
@@ -197,11 +197,11 @@ cdef class pyMapPoint(object):
 """ ORBextractor """
 cdef class pyORBextractor:
     cdef ORBextractor *thisptr
-    cdef bool _isSelfOwned
+    cdef bool isSelfOwned
     def __init__(self, isSelfOwned = False):
-        self._isSelfOwned = isSelfOwned
+        self.isSelfOwned = isSelfOwned
     def __dealloc__(self):
-        if self._isSelfOwned:
+        if self.isSelfOwned:
             del self.thisptr
 
     def extract(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] image,
@@ -234,11 +234,11 @@ cdef class pyORBextractor:
 """ ORBmatcher """
 cdef class pyORBmatcher:
     cdef ORBmatcher *thisptr
-    cdef bool _isSelfOwned
+    cdef bool isSelfOwned
     def __init__(self, isSelfOwned = False):
-        self._isSelfOwned = isSelfOwned
+        self.isSelfOwned = isSelfOwned
     def __dealloc__(self):
-        if self._isSelfOwned:
+        if self.isSelfOwned:
             del self.thisptr
 
     def SearchByProjection(self, pyFrame CurrentFrame, pyFrame LastFrame):
@@ -263,11 +263,11 @@ cdef class pyORBmatcher:
 """ ORBVocabulary """
 cdef class pyORBVocabulary:
     cdef ORBVocabulary* thisptr
-    cdef bool _isSelfOwned
+    cdef bool isSelfOwned
     def __init__(self, isSelfOwned = False):
-        self._isSelfOwned = isSelfOwned
+        self.isSelfOwned = isSelfOwned
     def __dealloc__(self):
-        if self._isSelfOwned:
+        if self.isSelfOwned:
             del self.thisptr
 
     @classmethod
@@ -283,15 +283,90 @@ cdef class pyORBVocabulary:
         vocabulary.thisptr = ptr
         return vocabulary
 
+""" KeyFrameDatabase """
+cdef class pyKeyFrameDatabase:
+    cdef KeyFrameDatabase* thisptr
+    cdef bool isSelfOwned
+    def __init__(self, isSelfOwned = False):
+        self.isSelfOwned = isSelfOwned
+    def __dealloc__(self):
+        if self.isSelfOwned:
+            del self.thisptr
+    def add(self, pyKeyFrame pKF):
+        self.thisptr.add(pKF.thisptr)
+
+    def erase(self, pyKeyFrame pKF):
+        self.thisptr.erase(pKF.thisptr)
+
+    def clear(self):
+        self.thisptr.clear()
+
+    def DetectLoopCandidates(self, pyKeyFrame pKF, float minScore):
+        return pyKeyFrame.warpPtrVector(self.thisptr.DetectLoopCandidates(pKF.thisptr, minScore))
+
+    def DetectRelocalizationCandidates(self, pyFrame pF):
+        return pyKeyFrame.warpPtrVector(self.thisptr.DetectRelocalizationCandidates(pF.thisptr))
+
+    @classmethod
+    def create(cls, pyORBVocabulary vocabulary):
+        database = pyKeyFrameDatabase(True)
+        database.thisptr = new KeyFrameDatabase(vocabulary.thisptr[0])
+        return database
+
+    @staticmethod
+    cdef warpPtr(KeyFrameDatabase *ptr):
+        database = pyKeyFrameDatabase(False)
+        database.thisptr = ptr
+        return database
+
+""" Tracking """
+cdef class pyTracking:
+    cdef Tracking* thisptr
+    cdef bool isSelfOwned
+    def __init__(self, isSelfOwned = False):
+        self.isSelfOwned = isSelfOwned
+    def __dealloc__(self):
+        if self.isSelfOwned:
+            del self.thisptr
+
+    def makeFrame(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] imGray, double timestamp):
+        cdef Mat imGray_
+        pyopencv_to(imGray, imGray_)
+
+        cdef Frame* pf = new Frame(imGray_, timestamp,
+                                   self.thisptr.mpORBextractorLeft,
+                                   self.thisptr.mpORBVocabulary,
+                                   self.thisptr.mK,   self.thisptr.mDistCoef,
+                                   self.thisptr.mbf,  self.thisptr.mThDepth)
+        f = pyFrame.warpPtr(pf)
+        f.isSelfOwned = True
+        return f
+
+    def reloc(self, pyFrame frame):
+        cdef bool isSucess = self.thisptr.Relocalization(frame.thisptr[0])
+        return isSucess
+
+    @staticmethod
+    cdef warpPtr(Tracking *ptr):
+        tracker = pyTracking(False)
+        tracker.thisptr = ptr
+        return tracker
+
 """ System """
 cdef class pySystem(object):
     cdef System *thisptr
+    cdef pyORBVocabulary vocabulary
+    cdef pyKeyFrameDatabase keyFrameDatabase
+    cdef pyTracking tracker
     def __init__(self, string strSettingsFile,
                  string strVocFile,
                  eSensor sensor = MONOCULAR):
         if not (os.path.isfile(strSettingsFile) and os.path.isfile(strVocFile)):
             raise RuntimeError("path not correct")
         self.thisptr = new System(strVocFile, strSettingsFile, sensor, bUseViewer=0)
+        self.vocabulary =  pyORBVocabulary.warpPtr(self.thisptr.mpVocabulary)
+        self.keyFrameDatabase =  pyKeyFrameDatabase.warpPtr(self.thisptr.mpKeyFrameDatabase)
+        self.tracker = pyTracking.warpPtr(self.thisptr.mpTracker)
 
     def __dealloc__(self):
         if self.thisptr != NULL:
@@ -324,15 +399,6 @@ cdef class pySystem(object):
 
     def GetReferenceMapPoints(self):
         return pyMapPoint.warpPtrVector(self.thisptr.mpMap.GetReferenceMapPoints())
-
-    def reloc(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] im, double timestamp):
-        cdef Mat cv_im
-        pyopencv_to(im, cv_im)
-
-        cdef Frame CurrentFrame = self.thisptr.mpTracker.makeFrame(cv_im, timestamp)
-        cdef bool isSucess = self.thisptr.mpTracker.Relocalization(CurrentFrame)
-        if isSucess:
-            return pyopencv_from(CurrentFrame.mTcw)
 
 
 def GdbBreak():

@@ -117,7 +117,8 @@ public:
     void Reset();
     bool Relocalization(Frame &CurrentFrame);
 
-protected:
+// protected: // changed to public for python access
+public:
 
     // Main tracking function. It is independent of the input sensor.
     void Track();

@@ -114,9 +114,14 @@ cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
 
 cdef extern from "../../include/KeyFrameDatabase.h" namespace "ORB_SLAM2" nogil:
     cppclass KeyFrameDatabase:
-        vector[KeyFrame*] DetectRelocalizationCandidates(Frame* F);
-cdef class pyKeyFrameDatabase:
-    cdef KeyFrameDatabase* thisptr
+        KeyFrameDatabase(const ORBVocabulary &voc)
+        void add(KeyFrame* pKF)
+        void erase(KeyFrame* pKF)
+        void clear()
+        vector[KeyFrame *] DetectLoopCandidates(KeyFrame* pKF, float minScore)
+        vector[KeyFrame*] DetectRelocalizationCandidates(Frame* F)
+
+
 
 cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
     enum eTrackingState "ORB_SLAM2::Tracking::eTrackingState":
@@ -127,10 +132,20 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
         LOST = 3
 
     cppclass Tracking:
+        # variable
+        Mat mK, mDistCoef  # Calibration matrix
+        float mbf, mThDepth
+
         eTrackingState mState
+        Frame mCurrentFrame, mLastFrame
+        ORBextractor *mpORBextractorLeft
+        ORBextractor *mpORBextractorRight
+        ORBextractor *mpIniORBextractor
+        ORBVocabulary *mpORBVocabulary
+        KeyFrameDatabase* mpKeyFrameDB
+        # function
         bool Relocalization(Frame &CurrentFrame)
-        Frame makeFrame(const Mat &im, const double &timestamp)
-        pass
+
 
 
 cdef extern from "../../include/LocalMapping.h" namespace "ORB_SLAM2" nogil:
@@ -163,5 +178,6 @@ cdef extern from "../../include/System.h" namespace "ORB_SLAM2" nogil:
         Tracking* mpTracker
         LocalMapping* mpLocalMapper
         LoopClosing* mpLoopCloser
-
+        ORBVocabulary* mpVocabulary
+        KeyFrameDatabase* mpKeyFrameDatabase
 

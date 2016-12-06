@@ -15,7 +15,23 @@ import sys
 sys.path.append("/home/kaihong/workspace/gltes")
 sys.path.append("/home/nubot/data/workspace/gltes")
 from tools import *
-from vtk_visualizer import plotxyz
+from vtk_visualizer import plotxyz, get_vtk_control
+viz = get_vtk_control()
+
+def CreateAxes(pose, length):
+    "Create a coordinate axes system with a given length of the axes"
+    axesActor = vtk.vtkAxesActor()
+    axesActor.AxisLabelsOff()
+    axesActor.SetTotalLength(length, length, length)
+    m = vtk.vtkMatrix4x4()
+    m.DeepCopy(pose.ravel().tolist())
+    axesActor.SetUserMatrix(m)
+    return axesActor
+
+def plotPoses(poses, length=1):
+    for Twc in poses:
+        if not Twc is None:
+            viz.AddActor(CreateAxes(Twc, length))
 
 
 def testORBextractor(im):
@@ -93,24 +109,26 @@ if __name__ == '__main__':
         res = slam.TrackMonocular(f,ts)
         track_rec.append((ts, res))
         print res
+
     kfs = slam.GetAllKeyFrames()
     mps = slam.GetAllMapPoints()
 
 #%% show keyframes
-
     for f in kfs:
         pis(image_set[f.mTimeStamp])
         plt.pause(0.01)
         plt.waitforbuttonpress()
 
 #%% show 3d map-points
-    p3d= np.vstack([mp.getWorldPos().ravel() for mp in mps if not mp.isBad()])
+    p3d = np.vstack([mp.getWorldPos().ravel() for mp in mps if not mp.isBad()])
     plotxyz(p3d)
+
+    ts,poses = zip(*track_rec)
+    plotPoses(poses,0.05)
 
 #%% localization mode
     slam.SetLocalizationMode(1)
     slam.TrackMonocular(f,ts)
 
 #%%
-    ts = keys[0]
-    slam.reloc(image_set[ts], ts)
+
