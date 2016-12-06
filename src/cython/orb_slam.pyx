@@ -13,9 +13,41 @@ import cython
 import os
 np.import_array()
 
-#from lsd_slam cimport Frame,DepthMap
 from opencv cimport *
 #from eigency.core cimport *
+
+from collections import namedtuple
+""" ORBextractor """
+pyPoint2f = namedtuple('pyPoint2f', ['x', 'y'])
+pyKeyPoint = namedtuple('pyKeyPoint', ['pt', 'size', 'angle', 'response', 'octave', 'class_id'])
+cdef class pyORBextractor:
+    cdef ORBextractor *thisptr
+    def __init__(self, int nfeatures=2000, float scaleFactor=1.2,
+                 int nlevels = 8, int iniThFAST=20, int minThFAST=7):
+        self.thisptr = new ORBextractor(nfeatures, scaleFactor, nlevels, iniThFAST, minThFAST)
+    def __dealloc__(self):
+        del self.thisptr
+
+    def extract(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] image,
+                np.ndarray[np.uint8_t, ndim=2, mode="c"] mask = None):
+        cdef Mat cv_image, cv_mask;
+        cdef Mat descriptors;
+        cdef vector[KeyPoint] keypoints,
+
+        pyopencv_to(image, cv_image)
+        if mask is not None:
+            pyopencv_to(mask, cv_mask)
+        self.thisptr.extract(cv_image, cv_mask, keypoints, descriptors)
+
+        keypoints_list = [pyKeyPoint(pyPoint2f(p.pt.x,p.pt.y),
+                                     p.size,
+                                     p.angle,
+                                     p.response,
+                                     p.octave,
+                                     p.class_id) for p in keypoints]
+        return keypoints_list, pyopencv_from(descriptors)
+
+
 
 """ KeyFrame """
 cdef pyKeyFrame warpKeyFrame(KeyFrame *ptr):

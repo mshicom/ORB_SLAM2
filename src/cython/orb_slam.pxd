@@ -22,7 +22,8 @@ cdef extern from "../../Thirdparty/DBoW2/DBoW2/FeatureVector.h" namespace "DBoW2
 
 cdef extern from "../../include/ORBextractor.h" namespace "ORB_SLAM2":
     cppclass ORBextractor:
-        pass
+        void extract "operator()"(Mat image, Mat mask,  vector[KeyPoint]& keypoints, Mat descriptors)
+        ORBextractor(int nfeatures, float scaleFactor, int nlevels, int iniThFAST, int minThFAST)
 
 cdef extern from "../../include/ORBVocabulary.h" namespace "ORB_SLAM2":
     cppclass ORBVocabulary:

@@ -17,13 +17,23 @@ sys.path.append("/home/nubot/data/workspace/gltes")
 from tools import *
 from vtk_visualizer import plotxyz
 
-if __name__ == '__main__':
-#    frames, wGc, K, _ = loaddata1()
 
-    from orb_kfs import loadImageFromBag
-    image_set, K = loadImageFromBag()
-    keys= sorted(image_set.keys())
-    frames = [image_set[key] for key in keys]
+def testORBextractor(im):
+    ext = pyORBextractor(2000)
+    kps, desc = ext.extract(im)
+    plt.imshow(im)
+    x = [ p.pt.x for p in kps]
+    y = [ p.pt.y for p in kps]
+    plt.plot(x,y,'b.')
+    print "total points extracted:", len(kps)
+
+if __name__ == '__main__':
+    frames, wGc, K, _ = loaddata1()
+
+#    from orb_kfs import loadImageFromBag
+#    image_set, K = loadImageFromBag()
+#    keys= sorted(image_set.keys())
+#    frames = [image_set[key] for key in keys]
 
     h,w = frames[0].shape
 
