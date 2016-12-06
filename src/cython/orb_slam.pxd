@@ -2,6 +2,7 @@
 from libcpp.deque cimport deque
 from libcpp.vector cimport vector
 from libcpp.set cimport set
+from libcpp.pair cimport pair
 from libcpp.memory cimport shared_ptr
 from libcpp cimport bool
 from libcpp.string cimport string
@@ -25,9 +26,31 @@ cdef extern from "../../include/ORBextractor.h" namespace "ORB_SLAM2":
         void extract "operator()"(Mat image, Mat mask,  vector[KeyPoint]& keypoints, Mat descriptors)
         ORBextractor(int nfeatures, float scaleFactor, int nlevels, int iniThFAST, int minThFAST)
 
+cdef extern from "../../include/ORBmatcher.h" namespace "ORB_SLAM2":
+    cppclass ORBmatcher:
+        ORBmatcher(float nnratio, bool checkOri)
+        int DescriptorDistance(Mat &a, Mat &b)
+        int SearchByProjection(Frame &F, const vector[MapPoint*] &vpMapPoints, const float th)
+        int SearchByProjection(Frame &F, const vector[MapPoint*] &vpMapPoints)
+        int SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float th, const bool bMono)
+        int SearchByProjection(Frame &CurrentFrame, KeyFrame* pKF, const set[MapPoint*] &sAlreadyFound, const float th, const int ORBdist)
+        int SearchByProjection(KeyFrame* pKF, Mat Scw, const vector[MapPoint*] &vpPoints, vector[MapPoint*] &vpMatched, int th)
+        int SearchByBoW(KeyFrame *pKF, Frame &F, vector[MapPoint*] &vpMapPointMatches)
+        int SearchByBoW(KeyFrame *pKF1, KeyFrame* pKF2, vector[MapPoint*] &vpMatches12)
+        int SearchForInitialization(Frame &F1, Frame &F2, vector[Point2f] &vbPrevMatched, vector[int] &vnMatches12, int windowSize)
+        int SearchForInitialization(Frame &F1, Frame &F2, vector[Point2f] &vbPrevMatched, vector[int] &vnMatches12)
+        int SearchForTriangulation(KeyFrame *pKF1, KeyFrame* pKF2, Mat F12, vector[pair[size_t, size_t]] &vMatchedPairs, const bool bOnlyStereo)
+        int Fuse(KeyFrame* pKF, const vector[MapPoint *] &vpMapPoints, const float th)
+        int Fuse(KeyFrame* pKF, const vector[MapPoint *] &vpMapPoints)
+        int Fuse(KeyFrame* pKF, Mat Scw, const vector[MapPoint*] &vpPoints, float th, vector[MapPoint *] &vpReplacePoint)
+
+        const int TH_LOW
+        const int TH_HIGH
+        const int HISTO_LENGTH
+
 cdef extern from "../../include/ORBVocabulary.h" namespace "ORB_SLAM2":
     cppclass ORBVocabulary:
-        pass
+        bool loadFromTextFile(string &filename)
 
 cdef extern from "../../include/Map.h" namespace "ORB_SLAM2" nogil:
     cppclass Map:
@@ -53,11 +76,15 @@ cdef extern from "../../include/Frame.h" namespace "ORB_SLAM2" nogil:
         Frame(const Mat &imGray, const double &timeStamp, ORBextractor* extractor, ORBVocabulary* voc, Mat &K, Mat &distCoef, const float &bf, const float &thDepth);
         void ExtractORB(int flag, const Mat &im)
         void ComputeBoW()
+        void SetPose(Mat Tcw)
 
         long unsigned int mnId
         vector[MapPoint*] mvpMapPoints
-        vector[KeyPoint] mvKeys
+        vector[KeyPoint] mvKeys, mvKeysUn
         Mat mTcw
+        double mTimeStamp
+        int N
+
 
 cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
     ctypedef KeyFrame* pKeyFrame
@@ -88,6 +115,8 @@ cdef extern from "../../include/KeyFrame.h" namespace "ORB_SLAM2" nogil:
 cdef extern from "../../include/KeyFrameDatabase.h" namespace "ORB_SLAM2" nogil:
     cppclass KeyFrameDatabase:
         vector[KeyFrame*] DetectRelocalizationCandidates(Frame* F);
+cdef class pyKeyFrameDatabase:
+    cdef KeyFrameDatabase* thisptr
 
 cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
     enum eTrackingState "ORB_SLAM2::Tracking::eTrackingState":
