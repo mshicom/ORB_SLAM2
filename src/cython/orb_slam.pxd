@@ -2,6 +2,7 @@
 from libcpp.deque cimport deque
 from libcpp.vector cimport vector
 from libcpp.set cimport set
+from libcpp.list cimport list
 from libcpp.pair cimport pair
 from libcpp.memory cimport shared_ptr
 from libcpp cimport bool
@@ -143,8 +144,13 @@ cdef extern from "../../include/Tracking.h" namespace "ORB_SLAM2" nogil:
         ORBextractor *mpIniORBextractor
         ORBVocabulary *mpORBVocabulary
         KeyFrameDatabase* mpKeyFrameDB
+        list[Mat] mlRelativeFramePoses
+
         # function
         bool Relocalization(Frame &CurrentFrame)
+        void InformOnlyTracking(const bool &flag)
+        void ChangeCalibration(const string &strSettingPath)
+        void Reset()
 
 
 
@@ -165,6 +171,8 @@ cdef extern from "../../include/System.h" namespace "ORB_SLAM2" nogil:
         RGBD "ORB_SLAM2::System::eSensor::RGBD" = 2
 
     cppclass System:
+        System(ORBVocabulary* vocabulary, KeyFrameDatabase* database, Map* map,
+           const string &strSettingsFile, const eSensor sensor, const bool bUseViewer)
         System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer)
         Mat TrackStereo(const Mat &imLeft, const Mat &imRight, const double &timestamp)
         Mat TrackRGBD(const Mat &im, const Mat &depthmap, const double &timestamp);

@@ -13,6 +13,7 @@ import cython
 import os
 np.import_array()
 
+
 from opencv cimport *
 #from eigency.core cimport *
 
@@ -272,6 +273,7 @@ cdef class pyORBVocabulary:
 
     @classmethod
     def create(cls, string filename):
+        print "Loading ORB Vocabulary. This could take a while..."
         vocabulary = pyORBVocabulary(True)
         vocabulary.thisptr = new ORBVocabulary()
         vocabulary.thisptr.loadFromTextFile(filename)
@@ -320,6 +322,14 @@ cdef class pyKeyFrameDatabase:
         return database
 
 """ Tracking """
+from enum import Enum
+class TrackingState(Enum):
+    SYSTEM_NOT_READY = -1
+    NO_IMAGES_YET = 0
+    NOT_INITIALIZED = 1
+    OK = 2
+    LOST = 3
+
 cdef class pyTracking:
     cdef Tracking* thisptr
     cdef bool isSelfOwned
@@ -328,6 +338,20 @@ cdef class pyTracking:
     def __dealloc__(self):
         if self.isSelfOwned:
             del self.thisptr
+
+    @property
+    def mState(self):
+        return TrackingState(self.thisptr.mState)
+    @property
+    def mCurrentFrame(self):
+        return pyFrame.warpPtr(&self.thisptr.mCurrentFrame)
+    @property
+    def mLastFrame(self):
+        return pyFrame.warpPtr(&self.thisptr.mLastFrame)
+    @property
+    def mlRelativeFramePoses(self):
+        return [pyopencv_from(p) for p in self.thisptr.mlRelativeFramePoses]
+
 
     def makeFrame(self, np.ndarray[np.uint8_t, ndim=2, mode="c"] imGray, double timestamp):
         cdef Mat imGray_
@@ -342,9 +366,12 @@ cdef class pyTracking:
         f.isSelfOwned = True
         return f
 
-    def reloc(self, pyFrame frame):
+    def Relocalization(self, pyFrame frame):
         cdef bool isSucess = self.thisptr.Relocalization(frame.thisptr[0])
         return isSucess
+
+    def Reset(self):
+        self.thisptr.Reset()
 
     @staticmethod
     cdef warpPtr(Tracking *ptr):
@@ -352,20 +379,58 @@ cdef class pyTracking:
         tracker.thisptr = ptr
         return tracker
 
+
+""" Map """
+cdef class pyMap:
+    cdef Map* thisptr
+    cdef bool isSelfOwned
+    def __init__(self, isSelfOwned = False):
+        self.isSelfOwned = isSelfOwned
+    def __dealloc__(self):
+        if self.isSelfOwned:
+            del self.thisptr
+
+    def GetAllKeyFrames(self):
+        return pyKeyFrame.warpPtrVector(self.thisptr.GetAllKeyFrames())
+
+    def GetAllMapPoints(self):
+        return pyMapPoint.warpPtrVector(self.thisptr.GetAllMapPoints())
+
+    def GetReferenceMapPoints(self):
+        return pyMapPoint.warpPtrVector(self.thisptr.GetReferenceMapPoints())
+
+    @classmethod
+    def create(cls):
+        map_ = pyMap(True)
+        map_.thisptr = new Map()
+        return map_
+
+    @staticmethod
+    cdef warpPtr(Map *ptr):
+        map_ = pyMap(False)
+        map_.thisptr = ptr
+        return map_
+
 """ System """
 cdef class pySystem(object):
     cdef System *thisptr
-    cdef pyORBVocabulary vocabulary
-    cdef pyKeyFrameDatabase keyFrameDatabase
-    cdef pyTracking tracker
-    def __init__(self, string strSettingsFile,
-                 string strVocFile,
-                 eSensor sensor = MONOCULAR):
-        if not (os.path.isfile(strSettingsFile) and os.path.isfile(strVocFile)):
+    cdef public pyORBVocabulary vocabulary
+    cdef public pyKeyFrameDatabase database
+    cdef public pyMap map_
+    cdef public pyTracking tracker
+    def __init__(self, pyORBVocabulary vocabulary,
+                       pyKeyFrameDatabase database,
+                       pyMap map_,
+                       string strSettingsFile,
+                       eSensor sensor = MONOCULAR):
+        if not os.path.isfile(strSettingsFile):
             raise RuntimeError("path not correct")
-        self.thisptr = new System(strVocFile, strSettingsFile, sensor, bUseViewer=0)
-        self.vocabulary =  pyORBVocabulary.warpPtr(self.thisptr.mpVocabulary)
-        self.keyFrameDatabase =  pyKeyFrameDatabase.warpPtr(self.thisptr.mpKeyFrameDatabase)
+
+        self.thisptr = new System(vocabulary.thisptr, database.thisptr, map_.thisptr,
+                                  strSettingsFile, sensor, 0)
+        self.vocabulary = vocabulary
+        self.database = database
+        self.map_ = map_
         self.tracker = pyTracking.warpPtr(self.thisptr.mpTracker)
 
     def __dealloc__(self):
@@ -392,13 +457,13 @@ cdef class pySystem(object):
         return self.thisptr.mpTracker.mState
 
     def GetAllKeyFrames(self):
-        return pyKeyFrame.warpPtrVector(self.thisptr.mpMap.GetAllKeyFrames())
+        return self.map_.GetAllKeyFrames()
 
     def GetAllMapPoints(self):
-        return pyMapPoint.warpPtrVector(self.thisptr.mpMap.GetAllMapPoints())
+        return self.map_.GetAllMapPoints()
 
     def GetReferenceMapPoints(self):
-        return pyMapPoint.warpPtrVector(self.thisptr.mpMap.GetReferenceMapPoints())
+        return self.map_.GetReferenceMapPoints()
 
 
 def GdbBreak():
