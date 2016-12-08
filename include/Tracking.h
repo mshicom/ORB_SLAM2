@@ -61,6 +61,7 @@ public:
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp);
     cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp);
+    Frame makeFrame(const cv::Mat &im, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
@@ -114,8 +115,10 @@ public:
     bool mbOnlyTracking;
 
     void Reset();
+    bool Relocalization(Frame &CurrentFrame);
 
-protected:
+// protected: // changed to public for python access
+public:
 
     // Main tracking function. It is independent of the input sensor.
     void Track();
@@ -131,9 +134,7 @@ protected:
     bool TrackReferenceKeyFrame();
     void UpdateLastFrame();
     bool TrackWithMotionModel();
-
     bool Relocalization();
-
     void UpdateLocalMap();
     void UpdateLocalPoints();
     void UpdateLocalKeyFrames();
