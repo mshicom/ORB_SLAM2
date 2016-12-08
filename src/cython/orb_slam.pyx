@@ -13,7 +13,6 @@ import cython
 import os
 np.import_array()
 
-
 from opencv cimport *
 #from eigency.core cimport *
 
@@ -35,7 +34,7 @@ cdef object warpKeyPoints(vector[KeyPoint] kps):
 """ Frame """
 cdef class pyFrame(object):
     cdef Frame *thisptr
-    cdef bool isSelfOwned
+    cdef public bool isSelfOwned
     def __init__(self, isSelfOwned = False):
         self.isSelfOwned = isSelfOwned
     def __dealloc__(self):

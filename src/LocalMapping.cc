@@ -46,7 +46,6 @@ void LocalMapping::SetTracker(Tracking *pTracker)
 
 void LocalMapping::Run()
 {
-
     mbFinished = false;
 
     while(1)
@@ -55,7 +54,7 @@ void LocalMapping::Run()
         SetAcceptKeyFrames(false);
 
         // Check if there are keyframes in the queue
-        if(CheckNewKeyFrames())
+        if(hasNewKeyFrames())
         {
             // BoW conversion and insertion in Map
             ProcessNewKeyFrame();
@@ -66,7 +65,7 @@ void LocalMapping::Run()
             // Triangulate new MapPoints
             CreateNewMapPoints();
 
-            if(!CheckNewKeyFrames())
+            if(!hasNewKeyFrames())
             {
                 // Find more matches in neighbor keyframes and fuse point duplications
                 SearchInNeighbors();
@@ -74,7 +73,7 @@ void LocalMapping::Run()
 
             mbAbortBA = false;
 
-            if(!CheckNewKeyFrames() && !stopRequested())
+            if(!hasNewKeyFrames() && !stopRequested())
             {
                 // Local BA
                 if(mpMap->KeyFramesInMap()>2)
@@ -119,7 +118,7 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
 }
 
 
-bool LocalMapping::CheckNewKeyFrames()
+bool LocalMapping::hasNewKeyFrames()
 {
     unique_lock<mutex> lock(mMutexNewKFs);
     return(!mlNewKeyFrames.empty());
@@ -236,7 +235,7 @@ void LocalMapping::CreateNewMapPoints()
     // Search matches with epipolar restriction and triangulate
     for(size_t i=0; i<vpNeighKFs.size(); i++)
     {
-        if(i>0 && CheckNewKeyFrames())
+        if(i>0 && hasNewKeyFrames())
             return;
 
         KeyFrame* pKF2 = vpNeighKFs[i];
@@ -552,6 +551,8 @@ cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
     return K1.t().inv()*t12x*R12*K2.inv();
 }
 
+// 1. in System::TrackMonocular when mbActivateLocalizationMode
+// 2. in LoopClosing::CorrectLoop()
 void LocalMapping::RequestStop()
 {
     unique_lock<mutex> lock(mMutexStop);
@@ -616,12 +617,13 @@ bool LocalMapping::SetNotStop(bool flag)
 {
     unique_lock<mutex> lock(mMutexStop);
 
-    if(flag && mbStopped)
+    if(flag && mbStopped){
+        // if set NotStop but stopped,  abort CreateNewKeyFrame
         return false;
-
-    mbNotStop = flag;
-
-    return true;
+    } else {
+        mbNotStop = flag;
+        return true;
+    }
 }
 
 void LocalMapping::InterruptBA()

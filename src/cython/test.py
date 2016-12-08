@@ -60,15 +60,15 @@ if __name__ == '__main__':
     database = pyKeyFrameDatabase.create(vocabulary)
     map_ = pyMap.create()
 
-    slam = pySystem(vocabulary, database, map_,
-                    "/home/kaihong/workspace/ORB_SLAM2/bumblebee.yaml")
+    slam = pySystem(vocabulary, database, map_, "/home/kaihong/workspace/ORB_SLAM2/bumblebee.yaml")
     tracker = slam.tracker
 
 #%%
     track_rec = []
     for f, ts in zip(frames, range(len(frames))):
         res = slam.TrackMonocular(f,ts)
-        track_rec.append((ts, res))
+        if tracker.mState is TrackingState.OK:
+            track_rec.append((ts, res))
         print res
 
     kfs = map_.GetAllKeyFrames()
@@ -80,7 +80,8 @@ if __name__ == '__main__':
 
     ts,poses = zip(*track_rec)
     plotPoses(poses,0.05)
-
+#%%
+    ftmp = tracker.makeFrame(frames[3], keys[3])
 
 
 #%%
