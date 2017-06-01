@@ -16,12 +16,16 @@ base_dir = "/home/nubot/data/workspace/ORB_SLAM2/"
 pic_path = "/home/nubot/data/Kitti/%06d.png"
 
 if 1:
+
   tracker = orbslam.System( base_dir + "Vocabulary/ORBvoc.txt",
                         base_dir + "Examples/Monocular/KITTI00-02.yaml",
                         orbslam.System.MONOCULAR,
                         True)
   t = []
-  for i in range(100):
+  for i in range(10):
     im = cv2.imread(pic_path%i)
     t.append( tracker.TrackMonocular(im, i) )
   print t
+
+  mps=[mp for mp in tracker.GetTrackedMapPoints() if mp is not None]
+  print "%d map points tracked" % len(mps)
