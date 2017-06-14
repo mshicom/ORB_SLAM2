@@ -17,8 +17,8 @@ pic_l_path = "/home/nubot/data/Kitti/image_2/%06d.png"
 pic_r_path = "/home/nubot/data/Kitti/image_3/%06d.png"
 
 if 1:
-  if 1: # MONOCULAR
-    tracker = orbslam.System( base_dir + "Vocabulary/ORBvoc.txt",
+  if 0: # MONOCULAR
+    tracker = orbslam.System( base_dir + "Vocabulary/ORBvoc.bin",
                               base_dir + "Examples/Monocular/KITTI00-02.yaml",
                               orbslam.System.MONOCULAR,
                               True)
@@ -30,7 +30,7 @@ if 1:
     print t
 
   else: # STEREO
-    tracker = orbslam.System( base_dir + "Vocabulary/ORBvoc.txt",
+    tracker = orbslam.System( base_dir + "Vocabulary/ORBvoc.bin",
                               base_dir + "Examples/Stereo/KITTI00-02.yaml",
                               orbslam.System.STEREO,
                               True)
