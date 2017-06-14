@@ -28,13 +28,18 @@ namespace ORB_SLAM2
 namespace std {
  %template(MapPointVector) vector<ORB_SLAM2::MapPoint*>;
  %template(KeyFrameVector) vector<ORB_SLAM2::KeyFrame*>;
-  %template(FloatVector) std::vector<float>;
+ %template(KeyPointVector) vector<cv::KeyPoint>;
+ %template(FloatVector)    vector<float>;
 
  %template(KeyFrameSet)   set<ORB_SLAM2::KeyFrame*>;
  %template(MapPointSet)   set<ORB_SLAM2::MapPoint*>;
+
+ %template(KeyFrameMapPointMap) map<ORB_SLAM2::KeyFrame*, size_t>;
+
 }
 
 %include "System.h"
+
 
 
 

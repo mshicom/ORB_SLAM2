@@ -455,8 +455,14 @@ void Tracking::Track()
 
             // Check if we need to insert a new keyframe
             if(NeedNewKeyFrame())
+            {
                 CreateNewKeyFrame();
-
+                if(1) {
+                    for(int i=0; i<10; i++)
+                        if(mpLocalMapper->KeyframesInQueue())
+                            usleep(10*1000);
+                }
+            }
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
             // if they are outliers or not. We don't want next frame to estimate its position
@@ -1133,7 +1139,6 @@ void Tracking::CreateNewKeyFrame()
     }
 
     mpLocalMapper->InsertKeyFrame(pKF);
-
     mpLocalMapper->SetNotStop(false);
 
     mnLastKeyFrameId = mCurrentFrame.mnId;
