@@ -11,7 +11,7 @@
 #include "KeyFrame.h"
 #include "Frame.h"
 #include "KeyFrameDatabase.h"
-
+#include "Optimizer.h"
 %}
 
 %rename("$ignore", regextarget=1) "(.*)Mutex(.*)";// ignore all the Mutex related function/member
@@ -39,6 +39,7 @@ namespace std {
 }
 
 %include "System.h"
+%include "Optimizer.h"
 
 
 
