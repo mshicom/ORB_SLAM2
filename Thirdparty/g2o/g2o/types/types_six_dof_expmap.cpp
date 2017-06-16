@@ -33,6 +33,11 @@ namespace g2o {
 
 using namespace std;
 
+G2O_REGISTER_TYPE(Edge_SE3_ProjectXYZ, EdgeSE3ProjectXYZ);
+G2O_REGISTER_TYPE(Edge_Stereo_SE3_ProjectXYZ, EdgeStereoSE3ProjectXYZ);
+G2O_REGISTER_TYPE(Edge_SE3_ProjectXYZOnlyPose, EdgeSE3ProjectXYZOnlyPose);
+G2O_REGISTER_TYPE(Edge_Stereo_SE3_ProjectXYZOnlyPose, EdgeStereoSE3ProjectXYZOnlyPose);
+
 
 Vector2d project2d(const Vector3d& v)  {
   Vector2d res;
@@ -160,7 +165,7 @@ EdgeStereoSE3ProjectXYZ::EdgeStereoSE3ProjectXYZ() : BaseBinaryEdge<3, Vector3d,
 }
 
 bool EdgeStereoSE3ProjectXYZ::read(std::istream& is){
-  for (int i=0; i<=3; i++){
+  for (int i=0; i<3; i++){
     is >> _measurement[i];
   }
   for (int i=0; i<=2; i++)
@@ -174,7 +179,7 @@ bool EdgeStereoSE3ProjectXYZ::read(std::istream& is){
 
 bool EdgeStereoSE3ProjectXYZ::write(std::ostream& os) const {
 
-  for (int i=0; i<=3; i++){
+  for (int i=0; i<3; i++){
     os << measurement()[i] << " ";
   }
 
@@ -307,7 +312,7 @@ Vector3d EdgeStereoSE3ProjectXYZOnlyPose::cam_project(const Vector3d & trans_xyz
 
 
 bool EdgeStereoSE3ProjectXYZOnlyPose::read(std::istream& is){
-  for (int i=0; i<=3; i++){
+  for (int i=0; i<3; i++){
     is >> _measurement[i];
   }
   for (int i=0; i<=2; i++)
@@ -321,7 +326,7 @@ bool EdgeStereoSE3ProjectXYZOnlyPose::read(std::istream& is){
 
 bool EdgeStereoSE3ProjectXYZOnlyPose::write(std::ostream& os) const {
 
-  for (int i=0; i<=3; i++){
+  for (int i=0; i<3; i++){
     os << measurement()[i] << " ";
   }
 
