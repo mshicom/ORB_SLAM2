@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2)
 
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE Release)
+  SET(CMAKE_BUILD_TYPE Debug)
 ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
@@ -39,7 +39,6 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(G2O REQUIRED)
-
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
@@ -70,6 +69,8 @@ src/KeyFrameDatabase.cc
 src/Sim3Solver.cc
 src/Initializer.cc
 src/Viewer.cc
+src/types_six_dof_expmap.cpp
+src/types_seven_dof_expmap.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -78,7 +79,6 @@ ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 #${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-#${G2O_LIBRARIES}
 ${G2O_CORE_LIBRARY}
 ${G2O_TYPES_SIM3}
 ${G2O_TYPES_SBA}
