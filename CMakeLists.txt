@@ -39,12 +39,15 @@ endif()
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(G2O REQUIRED)
+FIND_PACKAGE(Cholmod REQUIRED)
+
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
 ${G2O_INCLUDE_DIRS}
+${CHOLMOD_INCLUDE_DIR}
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
@@ -82,6 +85,8 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${G2O_CORE_LIBRARY}
 ${G2O_TYPES_SIM3}
 ${G2O_TYPES_SBA}
+${G2O_SOLVER_CHOLMOD}
+${CHOLMOD_LIBRARIES}
 )
 
 # Build examples

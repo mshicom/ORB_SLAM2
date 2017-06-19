@@ -54,7 +54,7 @@ using namespace g2o;
 typedef Matrix<double, 6, 6> Matrix6d;
 
 
-class  EdgeSE3ProjectXYZ: public  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, ORB_SLAM2::VertexSE3Expmap>{
+class  EdgeSE3ProjectXYZ: public  BaseBinaryEdge<2, Vector2d, VertexSBAPointXYZ, VertexSE3Expmap>{
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

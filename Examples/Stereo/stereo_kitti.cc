@@ -28,7 +28,7 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
-
+#include<Optimizer.h>
 using namespace std;
 
 void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
@@ -106,6 +106,8 @@ int main(int argc, char **argv)
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
     }
+    ORB_SLAM2::Optimizer o;
+    o.GetCov(SLAM.mpMap,1, NULL, 1, 1);
 
     // Stop all threads
     SLAM.Shutdown();
