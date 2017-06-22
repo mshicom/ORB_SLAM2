@@ -1262,6 +1262,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
 
+
     if(pbStopFlag)
         optimizer.setForceStopFlag(pbStopFlag);
 
@@ -1281,6 +1282,19 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
         if(pKF->mnId>maxKFid)
             maxKFid=pKF->mnId;
     }
+
+    // Set CameraParameters
+
+    Vector2D principle_point;
+    principle_point << vpKFs[0]->cx, vpKFs[0]->cy ;
+    g2o::CameraParameters * cam_params
+          = new g2o::CameraParameters (vpKFs[0]->fx, principle_point, vpKFs[0]->mb);
+
+    cam_params->setId(0);
+    if (!optimizer.addParameter(cam_params)) {
+       assert(false);
+     }
+
 
     const float thHuber2D = sqrt(5.99);
     const float thHuber3D = sqrt(7.815);
@@ -1318,7 +1332,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
                 Eigen::Matrix<double,2,1> obs;
                 obs << kpUn.pt.x, kpUn.pt.y;
 
-                EdgeSE3ProjectXYZ* e = new EdgeSE3ProjectXYZ();
+                g2o::EdgeProjectXYZ2UV* e = new g2o::EdgeProjectXYZ2UV();
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
                 e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
@@ -1333,10 +1347,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
                     rk->setDelta(thHuber2D);
                 }
 
-                e->fx = pKF->fx;
-                e->fy = pKF->fy;
-                e->cx = pKF->cx;
-                e->cy = pKF->cy;
+                e->setParameterId(0, 0);
 
                 optimizer.addEdge(e);
             }
@@ -1346,7 +1357,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
                 const float kp_ur = pKF->mvuRight[mit->second];
                 obs << kpUn.pt.x, kpUn.pt.y, kp_ur;
 
-                EdgeStereoSE3ProjectXYZ* e = new EdgeStereoSE3ProjectXYZ();
+                g2o::EdgeProjectXYZ2UVU* e = new g2o::EdgeProjectXYZ2UVU();
 
                 e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
                 e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
@@ -1362,12 +1373,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
                     rk->setDelta(thHuber3D);
                 }
 
-                e->fx = pKF->fx;
-                e->fy = pKF->fy;
-                e->cx = pKF->cx;
-                e->cy = pKF->cy;
-                e->bf = pKF->mbf;
-
+                e->setParameterId(0, 0);
                 optimizer.addEdge(e);
             }
         }
@@ -1386,7 +1392,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
     // Optimize!
     optimizer.initializeOptimization();
     optimizer.optimize(nIterations);
-
+    optimizer.save("/tmp/ba.g2o");
     // Recover optimized data
 
     //Keyframes

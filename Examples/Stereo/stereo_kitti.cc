@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     LoadImages(string(argv[3]), vstrImageLeft, vstrImageRight, vTimestamps);
 
     const int nImages = vstrImageLeft.size();
-
+    assert(nImages>0);
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::STEREO,true);
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imLeft, imRight;
-    for(int ni=0; ni<nImages; ni++)
+    for(int ni=0; ni<50; ni++)
     {
         // Read left and right images from file
         imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
@@ -135,7 +135,7 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
     ifstream fTimes;
     string strPathTimeFile = strPathToSequence + "/times.txt";
     fTimes.open(strPathTimeFile.c_str());
-    while(!fTimes.eof())
+    while(fTimes.good())
     {
         string s;
         getline(fTimes,s);
