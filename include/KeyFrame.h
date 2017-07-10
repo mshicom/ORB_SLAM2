@@ -152,6 +152,7 @@ public:
     cv::Mat mTcwGBA;
     cv::Mat mTcwBefGBA;
     long unsigned int mnBAGlobalForKF;
+    cv::Mat mPoseCov;
 
     // Calibration parameters
     const float fx, fy, cx, cy, invfx, invfy, mbf, mb, mThDepth;

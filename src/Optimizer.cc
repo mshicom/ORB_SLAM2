@@ -36,6 +36,7 @@
 
 #include <g2o/solvers/cholmod/linear_solver_cholmod.h>
 #include "Converter.h"
+#include <opencv2/core/eigen.hpp>
 
 #include<mutex>
 
@@ -1244,7 +1245,7 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
-void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
+void Optimizer::GetCov(Map* pMap, int nIterations,   const bool bRobust)
 {
     vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
     vector<MapPoint*> vpMP = pMap->GetAllMapPoints();
@@ -1262,11 +1263,9 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
 
-
-    if(pbStopFlag)
-        optimizer.setForceStopFlag(pbStopFlag);
-
     long unsigned int maxKFid = 0;
+
+    std::vector<g2o::OptimizableGraph::Vertex*>  kf_vertexs;
 
     // Set KeyFrame vertices
     for(size_t i=0; i<vpKFs.size(); i++)
@@ -1281,6 +1280,7 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
         optimizer.addVertex(vSE3);
         if(pKF->mnId>maxKFid)
             maxKFid=pKF->mnId;
+        kf_vertexs.push_back(vSE3);
     }
 
     // Set CameraParameters
@@ -1392,23 +1392,27 @@ void Optimizer::GetCov(Map* pMap, int nIterations, bool* pbStopFlag, const unsig
     // Optimize!
     optimizer.initializeOptimization();
     optimizer.optimize(nIterations);
-    optimizer.save("/tmp/ba.g2o");
+//    optimizer.save("/tmp/ba.g2o");
+
     // Recover optimized data
-
-    //Keyframes
-    for(size_t i=0; i<vpKFs.size(); i++)
-    {
-        KeyFrame* pKF = vpKFs[i];
-        if(pKF->isBad())
-            continue;
-        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
-        g2o::SE3Quat SE3quat = vSE3->estimate();
-        g2o::SparseBlockMatrixXd spinv;
-        bool ret = optimizer.computeMarginals(spinv, vSE3);
-        if(ret)
-            std::cout<< spinv.block(0,0) << std::endl;
-    }
-
+//    g2o::SparseBlockMatrixXd spinv;
+//    bool ret = optimizer.computeMarginals(spinv, kf_vertexs);
+//    if (ret ==true)
+        //Keyframes
+        for(size_t i=0; i<vpKFs.size(); i++)
+        {
+            KeyFrame* pKF = vpKFs[i];
+            if(pKF->isBad())
+                continue;
+            g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+            int id = vSE3->hessianIndex();
+            g2o::SparseBlockMatrixXd spinv;
+            bool ret = optimizer.computeMarginals(spinv, vSE3);
+            if (ret ==true){
+                pKF->mPoseCov.create(6,6,CV_64F);
+                cv::eigen2cv(*spinv.block(id,id), pKF->mPoseCov);
+            }
+        }
 }
 
 } //namespace ORB_SLAM

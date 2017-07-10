@@ -107,7 +107,7 @@ int main(int argc, char **argv)
             usleep((T-ttrack)*1e6);
     }
     ORB_SLAM2::Optimizer o;
-    o.GetCov(SLAM.mpMap,1, NULL, 1, 1);
+    o.GetCov(SLAM.mpMap);
 
     // Stop all threads
     SLAM.Shutdown();
