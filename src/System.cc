@@ -25,6 +25,7 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include "Optimizer.h"
 
 namespace ORB_SLAM2
 {
@@ -468,6 +469,50 @@ void System::SaveTrajectoryKITTI(const string &filename)
              Rwc.at<float>(1,0) << " " << Rwc.at<float>(1,1)  << " " << Rwc.at<float>(1,2) << " "  << twc.at<float>(1) << " " <<
              Rwc.at<float>(2,0) << " " << Rwc.at<float>(2,1)  << " " << Rwc.at<float>(2,2) << " "  << twc.at<float>(2) << endl;
     }
+    f.close();
+    cout << endl << "trajectory saved!" << endl;
+}
+
+void System::SaveKeyFrameTrajectoryKITTIwithCov(const string &filename)
+{
+    Optimizer::GetCov(mpMap);
+
+    cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
+
+    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    //cv::Mat Two = vpKFs[0]->GetPoseInverse();
+
+    ofstream f;
+    f.open(filename.c_str());
+    f << fixed;
+
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpKFs[i];
+
+       // pKF->SetPose(pKF->GetPose()*Two);
+
+        if(pKF->isBad() || pKF->mPoseCov.empty())
+            continue;
+        cv::Mat &Cov = pKF->mPoseCov;
+        cv::Mat Tcw = pKF->GetPose();
+        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+
+        f << setprecision(9)
+          << pKF->mTimeStamp    << " "
+          << Rwc.at<float>(0,0) << " " << Rwc.at<float>(0,1)  << " " << Rwc.at<float>(0,2) << " "  << twc.at<float>(0) << " " <<
+             Rwc.at<float>(1,0) << " " << Rwc.at<float>(1,1)  << " " << Rwc.at<float>(1,2) << " "  << twc.at<float>(1) << " " <<
+             Rwc.at<float>(2,0) << " " << Rwc.at<float>(2,1)  << " " << Rwc.at<float>(2,2) << " "  << twc.at<float>(2) << " "
+          << Cov.at<double>(0,0)<< " " << Cov.at<double>(1,1)<< " " << Cov.at<double>(2,2)<< " " <<
+             Cov.at<double>(3,3)<< " " << Cov.at<double>(4,4)<< " " << Cov.at<double>(5,5)<< " "
+          << endl;
+    }
+
     f.close();
     cout << endl << "trajectory saved!" << endl;
 }

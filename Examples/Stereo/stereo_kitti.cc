@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imLeft, imRight;
-    for(int ni=0; ni<50; ni++)
+    for(int ni=0; ni<nImages; ni++)
     {
         // Read left and right images from file
         imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
@@ -106,8 +106,6 @@ int main(int argc, char **argv)
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
     }
-    ORB_SLAM2::Optimizer o;
-    o.GetCov(SLAM.mpMap);
 
     // Stop all threads
     SLAM.Shutdown();
@@ -124,7 +122,7 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveTrajectoryKITTI("CameraTrajectory.txt");
+    SLAM.SaveKeyFrameTrajectoryKITTIwithCov("CameraTrajectory.txt");
 
     return 0;
 }
